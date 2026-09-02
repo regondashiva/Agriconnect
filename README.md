@@ -60,6 +60,7 @@ Tap the **Role Badge** on any screen's header to open the **Role Switcher Sheet*
 ---
 
 ## 🤖 AI Engineering & Backend Integration
-For the complete schema, payloads, and ML model requirements, see:
+For the complete schemas, payloads, and ML model requirements, see:
 - [AI Data Fields Specification Document](file:///c:/Users/shiva/OneDrive/Desktop/Agriconnect/AI_DATA_SPECIFICATION.md)
+- [User Registration & Onboarding Schema Document](file:///c:/Users/shiva/OneDrive/Desktop/Agriconnect/USER_REGISTRATION_SCHEMA.md)
 

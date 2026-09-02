@@ -13,14 +13,72 @@ class LandingScreen extends StatefulWidget {
   State<LandingScreen> createState() => _LandingScreenState();
 }
 
-class _LandingScreenState extends State<LandingScreen> {
-  int _currentNavIndex = 0;
+class _LandingScreenState extends State<LandingScreen> with TickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late AnimationController _floatController;
+  late Animation<double> _heroScaleAnimation;
+  late Animation<double> _heroFadeAnimation;
+  late Animation<Offset> _contentSlideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 1. Entrance animation (500-700ms)
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+
+    _heroFadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
+    );
+
+    _heroScaleAnimation = Tween<double>(begin: 0.96, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _fadeController,
+        curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _contentSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _fadeController,
+        curve: const Interval(0.2, 1.0, curve: Curves.easeOutQuad),
+      ),
+    );
+
+    _fadeController.forward();
+
+    // 2. Very subtle gentle floating effect (subtle, non-distracting)
+    _floatController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3200),
+      lowerBound: -2.0,
+      upperBound: 2.0,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _floatController.dispose();
+    super.dispose();
+  }
+
+  void _navigateToAuth() {
+    Navigator.pushNamed(context, '/login');
+  }
 
   void _openProfile(BuildContext context) {
     if (widget.appState != null) {
       _showProfileBottomSheet(context, widget.appState!);
     } else {
-      Navigator.pushNamed(context, '/login');
+      _navigateToAuth();
     }
   }
 
@@ -59,7 +117,7 @@ class _LandingScreenState extends State<LandingScreen> {
                   children: [
                     CircleAvatar(
                       radius: 24,
-                      backgroundColor: const Color(0xFF1B5E20),
+                      backgroundColor: const Color(0xFF15803D),
                       child: Text(
                         state.currentUser.name.isNotEmpty
                             ? state.currentUser.name[0].toUpperCase()
@@ -89,7 +147,7 @@ class _LandingScreenState extends State<LandingScreen> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              const Icon(Icons.verified, color: Color(0xFF2E7D32), size: 16),
+                              const Icon(Icons.verified, color: Color(0xFF15803D), size: 16),
                             ],
                           ),
                           const SizedBox(height: 2),
@@ -104,7 +162,7 @@ class _LandingScreenState extends State<LandingScreen> {
                               style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF1B5E20),
+                                color: Color(0xFF15803D),
                               ),
                             ),
                           ),
@@ -120,7 +178,7 @@ class _LandingScreenState extends State<LandingScreen> {
                 _buildProfileDetailRow(Icons.location_on_rounded, 'Location', state.currentUser.location),
                 _buildProfileDetailRow(Icons.language_rounded, 'Language', state.currentUser.preferredLanguage ?? 'Telugu / English'),
                 _buildProfileDetailRow(Icons.verified_user_rounded, 'SIH Tag', 'SIH-2026-AGR-VERIFIED'),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
@@ -137,8 +195,8 @@ class _LandingScreenState extends State<LandingScreen> {
                         icon: const Icon(Icons.swap_horiz, size: 18),
                         label: const Text('Switch Role'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF1B5E20),
-                          side: const BorderSide(color: Color(0xFF1B5E20)),
+                          foregroundColor: const Color(0xFF15803D),
+                          side: const BorderSide(color: Color(0xFF15803D)),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
@@ -148,12 +206,12 @@ class _LandingScreenState extends State<LandingScreen> {
                       child: ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pop(ctx);
-                          Navigator.pushNamed(context, '/login');
+                          _navigateToAuth();
                         },
                         icon: const Icon(Icons.logout_rounded, size: 18),
                         label: const Text('Change User'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1B5E20),
+                          backgroundColor: const Color(0xFF15803D),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
@@ -229,42 +287,52 @@ class _LandingScreenState extends State<LandingScreen> {
               const Text(
                 'How AgriConnect Works',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 19,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF111827),
+                  letterSpacing: -0.3,
                 ),
               ),
-              const SizedBox(height: 12),
-              _buildModalStep(
+              const SizedBox(height: 14),
+              _buildModalStepItem(
                 number: '1',
-                title: 'Farmers & FPOs List Produce',
-                desc: 'Upload harvest details via Voice AI or quick form with verified quality standards.',
+                title: 'Farmer / FPO Lists Produce',
+                desc: 'Upload crop details via Voice AI or manual input with verified quality standards.',
               ),
-              _buildModalStep(
+              _buildModalStepItem(
                 number: '2',
-                title: 'Smart Matching & Aggregation',
-                desc: 'AI algorithms match farmer supplies with bulk buyers and household demand clusters.',
+                title: 'AI Matches Demand',
+                desc: 'Smart algorithms match supplies with bulk buyers and household purchase orders.',
               ),
-              _buildModalStep(
+              _buildModalStepItem(
                 number: '3',
-                title: 'Multi-Pickup Logistics & Fast Payout',
-                desc: 'Optimized logistics pick up crops directly from farm hubs with escrow payout security.',
+                title: 'FPO Smart Aggregation',
+                desc: 'Combines multiple smallholder farmer batches into wholesale commercial lots.',
               ),
-              const SizedBox(height: 16),
+              _buildModalStepItem(
+                number: '4',
+                title: 'Optimized Logistics & Payout',
+                desc: 'Multi-stop pickup routes collect produce directly with instant Jan Dhan bank settlement.',
+              ),
+              const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(ctx);
-                    Navigator.pushNamed(context, '/login');
+                    _navigateToAuth();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF15803D),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
                   ),
-                  child: const Text('Get Started with AgriConnect', style: TextStyle(fontWeight: FontWeight.w800)),
+                  child: const Text(
+                    'Get Started with AgriConnect',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                  ),
                 ),
               ),
             ],
@@ -274,7 +342,7 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  Widget _buildModalStep({required String number, required String title, required String desc}) {
+  Widget _buildModalStepItem({required String number, required String title, required String desc}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -310,180 +378,100 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  void _handleBottomNavTap(int index) {
-    setState(() => _currentNavIndex = index);
-    if (index == 1) {
-      Navigator.pushNamed(context, '/buyer/home');
-    } else if (index == 2) {
-      Navigator.pushNamed(context, '/farmer/orders');
-    } else if (index == 3) {
-      Navigator.pushNamed(context, '/notifications');
-    } else if (index == 4) {
-      _openProfile(context);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF9),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. TOP HEADER (Brand & SIH 2026 Badge)
-              _buildTopHeader(context),
+              // 1. COMPACT HEADER (Clean Branding + SIH 2026 Badge)
+              _buildCompactHeader(context),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
-              // 2. HERO CARD CONTAINER (Combined layout matching reference image)
-              _buildCombinedHeroCard(context),
+              // 2. LARGE FARMER HERO VISUAL (Main Focus with Entrance & Float Animation)
+              _buildLargeHeroVisual(context),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 18),
 
-              // 3. TRUST & SOCIAL PROOF BAR
-              _buildTrustSocialProofBar(context),
-
-              const SizedBox(height: 26),
-
-              // 4. HOW AGRICONNECT WORKS SECTION
-              _buildHowItWorksSection(context),
-
-              const SizedBox(height: 28),
-
-              // 5. WHY CHOOSE AGRICONNECT SECTION
-              _buildWhyChooseSection(context),
+              // 3. HERO CONTENT & CALL TO ACTION
+              _buildHeroContent(context),
 
               const SizedBox(height: 24),
 
-              // 6. BOTTOM BANNER
-              _buildEmpoweringAgricultureSection(context),
+              // 4. AGRICONNECT COMPACT VALUE STRIP
+              _buildValueStrip(context),
+
+              const SizedBox(height: 28),
+
+              // 5. HOW AGRICONNECT WORKS (Mobile-Friendly Clean Flow)
+              _buildHowAgriConnectWorks(context),
+
+              const SizedBox(height: 28),
+
+              // 6. FINAL CALL TO ACTION CARD
+              _buildFinalCtaSection(context),
+
+              const SizedBox(height: 24),
             ],
           ),
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0A000000),
-              blurRadius: 8,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentNavIndex,
-          onTap: _handleBottomNavTap,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF15803D),
-          unselectedItemColor: const Color(0xFF9CA3AF),
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_filled),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_rounded),
-              label: 'Marketplace',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_bag_outlined),
-              label: 'Orders',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_none_rounded),
-              label: 'Notifications',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              label: 'Profile',
-            ),
-          ],
         ),
       ),
     );
   }
 
   // ==========================================
-  // 1. TOP HEADER (BRAND & SIH 2026 BADGE)
+  // 1. COMPACT HEADER (LEFT: LOGO, RIGHT: SIH BADGE)
   // ==========================================
-  Widget _buildTopHeader(BuildContext context) {
+  Widget _buildCompactHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Logo & Brand Name
-          Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1B5E20),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.eco_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
+          // Left: Logo + Wordmark
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF15803D),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text(
-                        'AgriConnect',
-                        style: TextStyle(
-                          color: Color(0xFF111827),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 17,
-                          letterSpacing: -0.3,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        'Connecting Farms to Opportunities',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF6B7280),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                child: const Icon(
+                  Icons.eco_rounded,
+                  color: Colors.white,
+                  size: 20,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'AgriConnect',
+                style: TextStyle(
+                  color: Color(0xFF0F2617),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                  letterSpacing: -0.4,
+                ),
+              ),
+            ],
           ),
 
-          const SizedBox(width: 8),
-
-          // SIH 2026 Pill Badge
+          // Right: SIH 2026 Pill Badge
           InkWell(
             onTap: () => _openProfile(context),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: const Color(0xFFFEF3C7),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: const Color(0xFFFDE68A)),
               ),
               child: const Text(
@@ -491,7 +479,8 @@ class _LandingScreenState extends State<LandingScreen> {
                 style: TextStyle(
                   color: Color(0xFF92400E),
                   fontWeight: FontWeight.w800,
-                  fontSize: 12,
+                  fontSize: 11,
+                  letterSpacing: 0.2,
                 ),
               ),
             ),
@@ -502,899 +491,487 @@ class _LandingScreenState extends State<LandingScreen> {
   }
 
   // ==========================================
-  // 2. HERO CARD CONTAINER (COMBINED EXACT DESIGN)
+  // 2. LARGE FARMER HERO VISUAL
   // ==========================================
-  Widget _buildCombinedHeroCard(BuildContext context) {
+  Widget _buildLargeHeroVisual(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _fadeController,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _heroFadeAnimation.value,
+          child: Transform.scale(
+            scale: _heroScaleAnimation.value,
+            child: SizedBox(
+              width: double.infinity,
+              height: 280,
+              child: Image.asset(
+                'assets/images/hero_farmer_connect.jpg',
+                width: double.infinity,
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                errorBuilder: (_, __, ___) => Image.asset(
+                  'assets/images/hero_farmer.jpg',
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 240,
+                    color: const Color(0xFFDCFCE7),
+                    child: const Center(
+                      child: Icon(Icons.agriculture_rounded, size: 60, color: Color(0xFF15803D)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ==========================================
+  // 3. HERO CONTENT & CALL TO ACTION
+  // ==========================================
+  Widget _buildHeroContent(BuildContext context) {
+    return SlideTransition(
+      position: _contentSlideAnimation,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Main Heading
+            const Text(
+              'Sell Smarter.\nConnect Directly.',
+              style: TextStyle(
+                fontSize: 27,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF0F2617),
+                height: 1.15,
+                letterSpacing: -0.6,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Short Supporting Subtitle
+            const Text(
+              'AI-powered connections between farmers, buyers and consumers.',
+              style: TextStyle(
+                fontSize: 13.5,
+                color: Color(0xFF4B5563),
+                height: 1.35,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            // Primary CTA Button: GET STARTED
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _navigateToAuth,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF15803D),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'GET STARTED',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.arrow_forward_rounded, size: 18),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Secondary Action: Learn How It Works ->
+            Center(
+              child: InkWell(
+                onTap: () => _showHowItWorksModal(context),
+                borderRadius: BorderRadius.circular(8),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Learn How It Works',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF15803D),
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF15803D)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // 4. AGRICONNECT VALUE STRIP (COMPACT & CLEAN)
+  // ==========================================
+  Widget _buildValueStrip(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+        color: const Color(0xFFF9FBFA),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildValueItem(
+                  icon: Icons.eco_rounded,
+                  iconColor: const Color(0xFF15803D),
+                  iconBg: const Color(0xFFDCFCE7),
+                  title: 'Better Prices',
+                  subtitle: 'Direct farmer-to-buyer deals',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildValueItem(
+                  icon: Icons.handshake_rounded,
+                  iconColor: const Color(0xFF0369A1),
+                  iconBg: const Color(0xFFE0F2FE),
+                  title: 'Smart Matching',
+                  subtitle: 'AI finds relevant demand',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildValueItem(
+                  icon: Icons.local_shipping_rounded,
+                  iconColor: const Color(0xFFB45309),
+                  iconBg: const Color(0xFFFEF3C7),
+                  title: 'Smart Logistics',
+                  subtitle: 'Efficient pickup & delivery',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildValueItem(
+                  icon: Icons.shopping_basket_rounded,
+                  iconColor: const Color(0xFF7C3AED),
+                  iconBg: const Color(0xFFF3E8FF),
+                  title: 'Fresh for Consumers',
+                  subtitle: 'Direct access to fresh produce',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildValueItem({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: iconBg,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: iconColor, size: 17),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF111827),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 1),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Color(0xFF6B7280),
+                  height: 1.25,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================
+  // 5. HOW AGRICONNECT WORKS (CLEAN STEP WORKFLOW)
+  // ==========================================
+  Widget _buildHowAgriConnectWorks(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Title
+          const Text(
+            'How AgriConnect Works',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF111827),
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'End-to-end transparent supply chain from farm gate to market.',
+            style: TextStyle(
+              fontSize: 11.5,
+              color: Color(0xFF6B7280),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Clean Vertical Step Flow
+          _buildWorkflowStep(
+            stepNumber: '1',
+            title: 'Farmer / FPO',
+            description: 'Farmers list produce with verified harvest & quality standards.',
+            isLast: false,
+          ),
+          _buildWorkflowStep(
+            stepNumber: '2',
+            title: 'List Produce',
+            description: 'Upload produce details with AI photo grading or vernacular Voice AI.',
+            isLast: false,
+          ),
+          _buildWorkflowStep(
+            stepNumber: '3',
+            title: 'AI Demand Matching',
+            description: 'Algorithms automatically match supply batches with bulk buyers.',
+            isLast: false,
+          ),
+          _buildWorkflowStep(
+            stepNumber: '4',
+            title: 'Smart Aggregation',
+            description: 'FPOs bundle multiple smallholder lots into wholesale consignments.',
+            isLast: false,
+          ),
+          _buildWorkflowStep(
+            stepNumber: '5',
+            title: 'Optimized Logistics',
+            description: 'Coordinated multi-stop pickup trucks collect produce from hubs.',
+            isLast: false,
+          ),
+          _buildWorkflowStep(
+            stepNumber: '6',
+            title: 'Buyer / Consumer',
+            description: 'Guaranteed quality delivery with instant direct Jan Dhan settlement.',
+            isLast: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkflowStep({
+    required String stepNumber,
+    required String title,
+    required String description,
+    required bool isLast,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left timeline node + vertical line
+        Column(
+          children: [
+            Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                color: const Color(0xFF15803D),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFDCFCE7), width: 2),
+              ),
+              child: Center(
+                child: Text(
+                  stepNumber,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ),
+            if (!isLast)
+              Container(
+                width: 2,
+                height: 36,
+                color: const Color(0xFFDCFCE7),
+              ),
+          ],
+        ),
+
+        const SizedBox(width: 12),
+
+        // Right content
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF4B5563),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================
+  // 6. FINAL CALL TO ACTION CARD
+  // ==========================================
+  Widget _buildFinalCtaSection(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F2617),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 12,
+            color: Color(0x1A0F2617),
+            blurRadius: 14,
             offset: Offset(0, 4),
           ),
         ],
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final double screenW = constraints.maxWidth;
-          final double rightVisualW = (screenW * 0.46).clamp(145.0, 185.0);
-          final double leftContentW = screenW - rightVisualW - 10;
-
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left Content Column
-              SizedBox(
-                width: leftContentW,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Empowering Farmers Tagline Pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0FDF4),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFDCFCE7)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFDCFCE7),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.eco_rounded, size: 12, color: Color(0xFF15803D)),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text(
-                                  'Empowering Farmers.',
-                                  style: TextStyle(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF15803D),
-                                    height: 1.1,
-                                  ),
-                                ),
-                                Text(
-                                  'Enriching Lives.',
-                                  style: TextStyle(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF15803D),
-                                    height: 1.1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Main Title
-                    const Text(
-                      'Sell Smarter.\nConnect Directly.',
-                      style: TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF0F2617),
-                        height: 1.15,
-                        letterSpacing: -0.4,
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Subtitle / Description
-                    const Text(
-                      'AgriConnect connects farmers and FPOs with suitable buyers through intelligent matching, demand insights and coordinated logistics.',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        color: Color(0xFF4B5563),
-                        height: 1.35,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // Action Buttons Row (or wrapped column if narrow)
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        // Get Started ->
-                        InkWell(
-                          onTap: () => Navigator.pushNamed(context, '/login'),
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF15803D),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Text(
-                                  'Get Started',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 10.5,
-                                  ),
-                                ),
-                                SizedBox(width: 4),
-                                Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 12),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        // Watch Demo
-                        InkWell(
-                          onTap: () => _showHowItWorksModal(context),
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6.5),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: const Color(0xFFE5E7EB)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(Icons.play_circle_outline_rounded, color: Color(0xFF111827), size: 13),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Watch Demo',
-                                  style: TextStyle(
-                                    color: Color(0xFF111827),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 10.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              // Right Farmer Visual with 3 Floating Glass Chips
-              SizedBox(
-                width: rightVisualW,
-                height: 260,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // Farmer Image Container
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFFFEF3C7), Color(0xFFD1FAE5), Color(0xFF15803D)],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                          child: Image.asset(
-                            'assets/images/hero_farmer.jpg',
-                            fit: BoxFit.cover,
-                            alignment: Alignment.topCenter,
-                            errorBuilder: (_, __, ___) => Image.network(
-                              'https://images.unsplash.com/photo-1595278069441-2cf29f8005a4?w=600&auto=format&fit=crop&q=80',
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => _buildFarmerVectorGraphic(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Floating Chip 1: Best Price (Top Right)
-                    Positioned(
-                      right: 4,
-                      top: 10,
-                      child: _buildFloatingGlassCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('Best Price', style: TextStyle(fontSize: 7.5, color: Color(0xFF6B7280), fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 2),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _buildMiniSparkline(),
-                                const SizedBox(width: 4),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: const [
-                                    Text('₹27.50 /kg', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
-                                    Text('+12% ↑', style: TextStyle(fontSize: 7, fontWeight: FontWeight.w800, color: Color(0xFF15803D))),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Floating Chip 2: New Demand (Middle Right)
-                    Positioned(
-                      right: 4,
-                      top: 80,
-                      child: _buildFloatingGlassCard(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(3.5),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFDCFCE7),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: const Icon(Icons.shopping_bag_outlined, color: Color(0xFF166534), size: 11),
-                            ),
-                            const SizedBox(width: 4),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Text('New Demand', style: TextStyle(fontSize: 7, color: Color(0xFF6B7280), fontWeight: FontWeight.w500)),
-                                Text('500 Ton', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
-                                Text('Wheat • MH', style: TextStyle(fontSize: 6.5, color: Color(0xFF9CA3AF))),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Floating Chip 3: Logistics (Bottom Right)
-                    Positioned(
-                      right: 4,
-                      bottom: 12,
-                      child: _buildFloatingGlassCard(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(3.5),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFDCFCE7),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: const Icon(Icons.local_shipping_outlined, color: Color(0xFF166534), size: 11),
-                            ),
-                            const SizedBox(width: 4),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Text('Logistics', style: TextStyle(fontSize: 7, color: Color(0xFF6B7280), fontWeight: FontWeight.w500)),
-                                Text('3 Nearby', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
-                                Text('Pick-up Points', style: TextStyle(fontSize: 6.5, color: Color(0xFF9CA3AF))),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  // ==========================================
-  // 3. TRUST & SOCIAL PROOF BAR
-  // ==========================================
-  Widget _buildTrustSocialProofBar(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Overlapping Avatars
-          SizedBox(
-            width: 80,
-            height: 28,
-            child: Stack(
-              children: [
-                _buildAvatarCircle('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60', 0, const Color(0xFF2E7D32)),
-                _buildAvatarCircle('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=60', 16, const Color(0xFF1B5E20)),
-                _buildAvatarCircle('https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&auto=format&fit=crop&q=60', 32, const Color(0xFF0D5328)),
-                _buildAvatarCircle('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60', 48, const Color(0xFF004D20)),
-              ],
+          const Text(
+            'Ready to connect\nyour farm to opportunity?',
+            style: TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              height: 1.2,
+              letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(width: 8),
-
-          // Text
-          Expanded(
-            child: RichText(
-              text: const TextSpan(
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 11,
-                  color: Color(0xFF4B5563),
-                  height: 1.25,
+          const SizedBox(height: 6),
+          const Text(
+            'Join thousands of farmers, FPOs, and buyers on AgriConnect.',
+            style: TextStyle(
+              fontSize: 11.5,
+              color: Color(0xFF9CA3AF),
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _navigateToAuth,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF22C55E),
+                foregroundColor: const Color(0xFF0F2617),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  TextSpan(
-                    text: '10K+  ',
+                  Text(
+                    'GET STARTED',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
-                      fontSize: 13,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                  TextSpan(text: 'Farmers & Buyers trust\nAgriConnect'),
-                ],
-              ),
-            ),
-          ),
-
-          // Green Shield Check Badge
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: const BoxDecoration(
-              color: Color(0xFFEFF8F1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.verified_user_rounded,
-              color: Color(0xFF15803D),
-              size: 18,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAvatarCircle(String imgUrl, double left, Color fallbackBg) {
-    return Positioned(
-      left: left,
-      child: Container(
-        width: 26,
-        height: 26,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
-        ),
-        child: ClipOval(
-          child: Image.network(
-            imgUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: fallbackBg,
-              child: const Icon(Icons.person, color: Colors.white, size: 14),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFloatingGlassCard({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4.5),
-      decoration: BoxDecoration(
-        color: const Color(0xF5FFFFFF),
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: Colors.white, width: 1.2),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-
-  Widget _buildMiniSparkline() {
-    return SizedBox(
-      width: 22,
-      height: 12,
-      child: CustomPaint(
-        painter: _SparklinePainter(),
-      ),
-    );
-  }
-
-  Widget _buildFarmerVectorGraphic() {
-    return Container(
-      color: const Color(0xFF86EFAC),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(Icons.person, size: 40, color: Color(0xFF15803D)),
-          SizedBox(height: 4),
-          Icon(Icons.phone_android, size: 20, color: Color(0xFF166534)),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================
-  // 4. HOW AGRICONNECT WORKS SECTION
-  // ==========================================
-  Widget _buildHowItWorksSection(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Section Title: Leaves + Text
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.eco_rounded, color: Color(0xFF166534), size: 16),
-              SizedBox(width: 6),
-              Text(
-                'How AgriConnect Works',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF111827),
-                  letterSpacing: -0.3,
-                ),
-              ),
-              SizedBox(width: 6),
-              Icon(Icons.eco_rounded, color: Color(0xFF166534), size: 16),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // 3 Flow Stages with connecting arrows
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Node 1: Farmer / FPO (Supply)
-              _buildWorksNode(
-                title: 'Farmer / FPO',
-                subtitle: 'Supply',
-                imageAssetPath: 'assets/images/how_tractor.jpg',
-                fallbackIcon: Icons.agriculture_rounded,
-                bgColor: const Color(0xFFEFF8F1),
-              ),
-
-              // Arrow 1
-              Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF86EFAC),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF15803D), size: 14),
-              ),
-
-              // Node 2: Bulk Buyer (Demand)
-              _buildWorksNode(
-                title: 'Bulk Buyer',
-                subtitle: 'Demand',
-                imageAssetPath: 'assets/images/how_mandi.jpg',
-                fallbackIcon: Icons.storefront_rounded,
-                bgColor: const Color(0xFFEFF6FF),
-              ),
-
-              // Arrow 2
-              Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF86EFAC),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF15803D), size: 14),
-              ),
-
-              // Node 3: Consumer (Fresh)
-              _buildWorksNode(
-                title: 'Consumer',
-                subtitle: 'Fresh',
-                imageAssetPath: null,
-                customWidget: _buildFreshProduceBasketIcon(),
-                fallbackIcon: Icons.shopping_basket_rounded,
-                bgColor: const Color(0xFFFEF3C7),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 18),
-
-          // Bottom Pill: AI Smart Matching & Multi-Pickup Logistics
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFDCFCE7)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x08000000),
-                  blurRadius: 6,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.auto_awesome, color: Color(0xFF15803D), size: 15),
-                SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'AI Smart Matching & Multi-Pickup Logistics',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF166534),
-                      fontSize: 12,
-                      letterSpacing: 0.2,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWorksNode({
-    required String title,
-    required String subtitle,
-    String? imageAssetPath,
-    Widget? customWidget,
-    required IconData fallbackIcon,
-    required Color bgColor,
-  }) {
-    return Column(
-      children: [
-        Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            color: bgColor,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2.5),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0D000000),
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ClipOval(
-            child: customWidget ??
-                (imageAssetPath != null
-                    ? Image.asset(
-                        imageAssetPath,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Icon(fallbackIcon, color: const Color(0xFF15803D), size: 32),
-                      )
-                    : Icon(fallbackIcon, color: const Color(0xFFD97706), size: 32)),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 11.5,
-            color: Color(0xFF111827),
-          ),
-        ),
-        const SizedBox(height: 1),
-        Text(
-          subtitle,
-          style: const TextStyle(
-            fontSize: 10,
-            color: Color(0xFF6B7280),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFreshProduceBasketIcon() {
-    return Container(
-      color: const Color(0xFFFEF3C7),
-      padding: const EdgeInsets.all(8),
-      child: Stack(
-        alignment: Alignment.center,
-        children: const [
-          Icon(Icons.shopping_basket_rounded, color: Color(0xFFD97706), size: 36),
-          Positioned(
-            top: 6,
-            child: Icon(Icons.eco_rounded, color: Color(0xFF15803D), size: 14),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================
-  // 5. WHY CHOOSE AGRICONNECT SECTION
-  // ==========================================
-  Widget _buildWhyChooseSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          // Section Title with underline bar
-          Column(
-            children: [
-              const Text(
-                'Why Choose AgriConnect?',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF111827),
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Container(
-                width: 36,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF15803D),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // 4-Column Feature Highlights (Clean modern layout)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _buildFeatureCard(
-                  icon: Icons.track_changes_rounded,
-                  title: 'Smart Matching',
-                  desc: 'AI-powered matching connects you with the right buyers.',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildFeatureCard(
-                  icon: Icons.bar_chart_rounded,
-                  title: 'Demand Insights',
-                  desc: 'Real-time market demand and price updates.',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildFeatureCard(
-                  icon: Icons.local_shipping_rounded,
-                  title: 'Multi-Pickup Logistics',
-                  desc: 'Efficient pickup coordination for faster deliveries.',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildFeatureCard(
-                  icon: Icons.verified_user_rounded,
-                  title: 'Trusted & Secure',
-                  desc: 'Verified users, transparent deals and data security.',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeatureCard({
-    required IconData icon,
-    required String title,
-    required String desc,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x04000000),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFFDCFCE7),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: const Color(0xFF15803D), size: 18),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 10,
-              color: Color(0xFF111827),
-              height: 1.15,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            desc,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 8,
-              color: Color(0xFF6B7280),
-              height: 1.25,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================
-  // 6. EMPOWERING AGRICULTURE & BOTTOM BANNER
-  // ==========================================
-  Widget _buildEmpoweringAgricultureSection(BuildContext context) {
-    return Column(
-      children: [
-        // Large CTA Button: JOIN AGRICONNECT TODAY
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: InkWell(
-            onTap: () => Navigator.pushNamed(context, '/login'),
-            borderRadius: BorderRadius.circular(28),
-            child: Container(
-              height: 48,
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              decoration: BoxDecoration(
-                color: const Color(0xFF15803D),
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x3315803D),
-                    blurRadius: 8,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Icon(Icons.groups_rounded, color: Colors.white, size: 20),
-                  Text(
-                    'JOIN AGRICONNECT TODAY',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13,
+                      fontSize: 14,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                  SizedBox(width: 6),
+                  Icon(Icons.arrow_forward_rounded, size: 18),
                 ],
               ),
             ),
           ),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Subtext / Footer slogan
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.verified_user_rounded, color: Color(0xFF15803D), size: 13),
-            SizedBox(width: 5),
-            Text(
-              'Be a part of the future of agriculture.',
-              style: TextStyle(
-                fontSize: 10.5,
-                color: Color(0xFF4B5563),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(width: 5),
-            Icon(Icons.eco_rounded, color: Color(0xFF15803D), size: 13),
-          ],
-        ),
-      ],
+        ],
+      ),
     );
   }
-}
-
-// Custom Painter for the Sparkline on the "Best Price" badge
-class _SparklinePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF15803D)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final path = Path()
-      ..moveTo(0, size.height * 0.75)
-      ..lineTo(size.width * 0.25, size.height * 0.8)
-      ..lineTo(size.width * 0.45, size.height * 0.3)
-      ..lineTo(size.width * 0.65, size.height * 0.45)
-      ..lineTo(size.width * 0.85, size.height * 0.1)
-      ..lineTo(size.width, size.height * 0.2);
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
