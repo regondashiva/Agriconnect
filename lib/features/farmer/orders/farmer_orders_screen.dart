@@ -20,13 +20,14 @@ class FarmerOrdersScreen extends StatelessWidget {
         title: const Text('My Farmer Orders'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Active & Completed Orders',
-              style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.w700),
+              style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.w700, fontSize: 18),
             ),
             const SizedBox(height: 4),
             Text(
@@ -41,44 +42,57 @@ class FarmerOrdersScreen extends StatelessWidget {
               onTap: () {
                 Navigator.pushNamed(context, '/coordination/tracking');
               },
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Order #${order.orderId}',
-                            style: AppTypography.headlineSmall.copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Order #${order.orderId}',
+                              style: AppTypography.headlineSmall.copyWith(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          Text('Aggregated 500 kg Tomato', style: AppTypography.bodySmall),
-                        ],
+                            const SizedBox(height: 2),
+                            Text(
+                              'Aggregated 500 kg Tomato',
+                              style: AppTypography.bodySmall.copyWith(fontSize: 11.5),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
-                      StatusChip.orange(order.currentStatusText),
+                      const SizedBox(width: 8),
+                      StatusChip.orange('In Transit'),
                     ],
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   const Divider(),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
 
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildInfo('Your Supply', '100 kg'),
-                      _buildInfo('Your Payout', '₹2,000'),
-                      _buildInfo('ETA', order.eta),
+                      Expanded(child: _buildInfo('Your Supply', '100 kg')),
+                      Container(width: 1, height: 26, color: AppColors.outlineVariant),
+                      Expanded(child: _buildInfo('Your Payout', '₹2,000')),
+                      Container(width: 1, height: 26, color: AppColors.outlineVariant),
+                      Expanded(child: _buildInfo('ETA', order.eta)),
                     ],
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
 
                   Container(
                     padding: const EdgeInsets.all(10),
@@ -93,7 +107,9 @@ class FarmerOrdersScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'Pickup mini-truck en route to Chevella stop',
-                            style: AppTypography.labelSmall.copyWith(color: AppColors.primary),
+                            style: AppTypography.labelSmall.copyWith(color: AppColors.primary, fontSize: 11.5),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -105,11 +121,17 @@ class FarmerOrdersScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Text(
-                        'Track Live Route & Settlement →',
-                        style: AppTypography.labelSmall.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
+                      Flexible(
+                        child: Text(
+                          'Track Live Route & Settlement →',
+                          style: AppTypography.labelSmall.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
                         ),
                       ),
                     ],
@@ -117,6 +139,7 @@ class FarmerOrdersScreen extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -125,11 +148,22 @@ class FarmerOrdersScreen extends StatelessWidget {
 
   Widget _buildInfo(String label, String value) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(label, style: AppTypography.bodySmall.copyWith(fontSize: 11)),
-        const SizedBox(height: 2),
-        Text(value, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          value,
+          style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 13),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 1),
+        Text(
+          label,
+          style: AppTypography.bodySmall.copyWith(fontSize: 10),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ],
     );
   }

@@ -20,13 +20,14 @@ class BuyerOrdersScreen extends StatelessWidget {
         title: const Text('Wholesale Orders'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Active Consignments',
-              style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.w700),
+              style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.w700, fontSize: 18),
             ),
             const SizedBox(height: 4),
             Text(
@@ -40,21 +41,36 @@ class BuyerOrdersScreen extends StatelessWidget {
               onTap: () {
                 Navigator.pushNamed(context, '/coordination/tracking');
               },
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Order #${order.orderId}', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
-                          Text('500 kg Tomato (Grade A Aggregated)', style: AppTypography.bodySmall.copyWith(fontSize: 12)),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Order #${order.orderId}',
+                              style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800, fontSize: 15),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '500 kg Tomato (Grade A Aggregated)',
+                              style: AppTypography.bodySmall.copyWith(fontSize: 11.5),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
-                      StatusChip.orange(order.currentStatusText),
+                      const SizedBox(width: 8),
+                      StatusChip.orange('In Transit'),
                     ],
                   ),
 
@@ -63,15 +79,16 @@ class BuyerOrdersScreen extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildCol('Total Amount', '₹10,000'),
-                      _buildCol('Supply Sources', '3 Farmers'),
-                      _buildCol('ETA at Gate', order.eta),
+                      Expanded(child: _buildCol('Total Amount', '₹10,000')),
+                      Container(width: 1, height: 26, color: AppColors.outlineVariant),
+                      Expanded(child: _buildCol('Supply Sources', '3 Farmers')),
+                      Container(width: 1, height: 26, color: AppColors.outlineVariant),
+                      Expanded(child: _buildCol('ETA at Gate', order.eta)),
                     ],
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
 
                   Container(
                     padding: const EdgeInsets.all(10),
@@ -86,7 +103,9 @@ class BuyerOrdersScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'Driver Mahesh (AP 28 TA 4512) en route to Mandi Gate #3',
-                            style: AppTypography.bodySmall.copyWith(fontSize: 12, color: AppColors.primary),
+                            style: AppTypography.bodySmall.copyWith(fontSize: 11.5, color: AppColors.primary, fontWeight: FontWeight.w600),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -98,11 +117,17 @@ class BuyerOrdersScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Text(
-                        'View Live Route & Settlement Details →',
-                        style: AppTypography.labelSmall.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
+                      Flexible(
+                        child: Text(
+                          'View Live Route & Settlement Details →',
+                          style: AppTypography.labelSmall.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
                         ),
                       ),
                     ],
@@ -110,6 +135,7 @@ class BuyerOrdersScreen extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -118,11 +144,22 @@ class BuyerOrdersScreen extends StatelessWidget {
 
   Widget _buildCol(String label, String val) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(label, style: AppTypography.bodySmall.copyWith(fontSize: 11)),
-        const SizedBox(height: 2),
-        Text(val, style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800, color: AppColors.primary)),
+        Text(
+          val,
+          style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 13),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 1),
+        Text(
+          label,
+          style: AppTypography.bodySmall.copyWith(fontSize: 10),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ],
     );
   }

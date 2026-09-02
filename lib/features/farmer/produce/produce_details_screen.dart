@@ -31,39 +31,54 @@ class ProduceDetailsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Tomato (Hybrid Red)',
-                              style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.w800),
+                              style: AppTypography.headlineMedium.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 18,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 2),
-                            Text('Batch ID: #PROD-TOM-01', style: AppTypography.bodySmall),
+                            Text(
+                              'Batch ID: #PROD-TOM-01',
+                              style: AppTypography.bodySmall.copyWith(fontSize: 12),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ],
                         ),
-                        StatusChip.success('Active Listing'),
+                      ),
+                      const SizedBox(width: 8),
+                      StatusChip.success('Active Listing'),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(child: _buildField('Quantity', '100 kg')),
+                        Container(width: 1, height: 26, color: AppColors.outlineVariant),
+                        Expanded(child: _buildField('Grade', 'Grade A')),
+                        Container(width: 1, height: 26, color: AppColors.outlineVariant),
+                        Expanded(child: _buildField('Expected Price', '₹20 / kg')),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildField('Quantity', '100 kg'),
-                          _buildField('Grade', 'Grade A'),
-                          _buildField('Expected Price', '₹20 / kg'),
-                        ],
-                      ),
-                    ),
+                  ),
                     const SizedBox(height: 12),
                       Row(
                         children: [
@@ -222,16 +237,25 @@ class ProduceDetailsScreen extends StatelessWidget {
 
   Widget _buildField(String label, String value) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           value,
           style: AppTypography.labelLarge.copyWith(
             fontWeight: FontWeight.w800,
             color: AppColors.textNavy,
+            fontSize: 13,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 2),
-        Text(label, style: AppTypography.bodySmall.copyWith(fontSize: 11)),
+        Text(
+          label,
+          style: AppTypography.bodySmall.copyWith(fontSize: 10),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ],
     );
   }

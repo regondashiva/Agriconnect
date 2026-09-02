@@ -47,7 +47,18 @@ class _AggregateSupplyScreenState extends State<AggregateSupplyScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Target Wholesale Demand', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
+                        Expanded(
+                          child: Text(
+                            'Target Wholesale Demand',
+                            style: AppTypography.labelLarge.copyWith(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         StatusChip.orange('500 kg Required'),
                       ],
                     ),

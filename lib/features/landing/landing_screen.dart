@@ -21,146 +21,153 @@ class LandingScreen extends StatelessWidget {
   void _showProfileBottomSheet(BuildContext context, AppState state) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.outlineVariant,
-                    borderRadius: BorderRadius.circular(10),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: AppColors.outlineVariant,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundColor: const Color(0xFF1B5E20),
-                    child: Text(
-                      state.currentUser.name.isNotEmpty
-                          ? state.currentUser.name[0].toUpperCase()
-                          : 'U',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: const Color(0xFF1B5E20),
+                      child: Text(
+                        state.currentUser.name.isNotEmpty
+                            ? state.currentUser.name[0].toUpperCase()
+                            : 'U',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                state.currentUser.name,
-                                style: AppTypography.headlineSmall.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 17,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  state.currentUser.name,
+                                  style: AppTypography.headlineSmall.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(width: 6),
+                              const Icon(Icons.verified, color: Color(0xFF2E7D32), size: 16),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              state.currentUser.roleDisplayName.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1B5E20),
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.verified, color: Color(0xFF2E7D32), size: 18),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F5E9),
-                            borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Text(
-                            state.currentUser.roleDisplayName.toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1B5E20),
-                            ),
-                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 4),
+                _buildProfileDetailRow(Icons.phone_rounded, 'Phone', state.currentUser.phoneNumber),
+                _buildProfileDetailRow(Icons.location_on_rounded, 'Location', state.currentUser.location),
+                _buildProfileDetailRow(Icons.language_rounded, 'Language', state.currentUser.preferredLanguage ?? 'Telugu / English'),
+                _buildProfileDetailRow(Icons.verified_user_rounded, 'SIH Tag', 'SIH-2026-AGR-VERIFIED'),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF164E2A),
+                          side: const BorderSide(color: Color(0xFF164E2A)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              const Divider(),
-              const SizedBox(height: 6),
-              _buildProfileDetailRow(Icons.phone_rounded, 'Phone', state.currentUser.phoneNumber),
-              _buildProfileDetailRow(Icons.location_on_rounded, 'Location', state.currentUser.location),
-              _buildProfileDetailRow(Icons.language_rounded, 'Language', state.currentUser.preferredLanguage ?? 'Telugu / English'),
-              _buildProfileDetailRow(Icons.verified_user_rounded, 'SIH Tag', 'SIH-2026-AGR-VERIFIED'),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF164E2A),
-                        side: const BorderSide(color: Color(0xFF164E2A)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                        label: const Text('Switch Role', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          RoleSwitcherSheet.show(context, state);
+                        },
                       ),
-                      icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                      label: const Text('Switch Role', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        RoleSwitcherSheet.show(context, state);
-                      },
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF164E2A),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF164E2A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.dashboard_rounded, size: 18),
+                        label: const Text('Dashboard', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          switch (state.activeRole) {
+                            case UserRole.farmer:
+                              Navigator.pushNamed(context, '/farmer/home');
+                              break;
+                            case UserRole.fpo:
+                              Navigator.pushNamed(context, '/fpo/home');
+                              break;
+                            case UserRole.bulkBuyer:
+                              Navigator.pushNamed(context, '/buyer/home');
+                              break;
+                            case UserRole.consumer:
+                              Navigator.pushNamed(context, '/consumer/home');
+                              break;
+                          }
+                        },
                       ),
-                      icon: const Icon(Icons.dashboard_rounded, size: 18),
-                      label: const Text('Dashboard', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        switch (state.activeRole) {
-                          case UserRole.farmer:
-                            Navigator.pushNamed(context, '/farmer/home');
-                            break;
-                          case UserRole.fpo:
-                            Navigator.pushNamed(context, '/fpo/home');
-                            break;
-                          case UserRole.bulkBuyer:
-                            Navigator.pushNamed(context, '/buyer/home');
-                            break;
-                          case UserRole.consumer:
-                            Navigator.pushNamed(context, '/consumer/home');
-                            break;
-                        }
-                      },
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 6),
+              ],
+            ),
           ),
         ),
       ),
@@ -169,17 +176,17 @@ class LandingScreen extends StatelessWidget {
 
   Widget _buildProfileDetailRow(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 17, color: const Color(0xFF6B7280)),
-          const SizedBox(width: 10),
-          Text('$label:', style: const TextStyle(fontSize: 12.5, color: Color(0xFF6B7280), fontWeight: FontWeight.w500)),
+          Icon(icon, size: 16, color: const Color(0xFF6B7280)),
           const SizedBox(width: 8),
+          Text('$label:', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.w500)),
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -191,56 +198,65 @@ class LandingScreen extends StatelessWidget {
   void _showHowItWorksModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.outlineVariant,
-                    borderRadius: BorderRadius.circular(10),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: AppColors.outlineVariant,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'How AgriConnect Works',
-                style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'AgriConnect is an end-to-end coordination engine bridging farmers, FPOs, wholesale buyers, and urban households.',
-                style: AppTypography.bodySmall,
-              ),
-              const SizedBox(height: 16),
-              _buildModalStep('1', 'Supply & Demand Gathering', 'Farmers list produce (via voice/form) and bulk buyers post requirements.', Icons.input_rounded),
-              _buildModalStep('2', 'AI Smart Multi-Farmer Matching', 'Algorithm matches 500kg requirements across smallholder farm clusters.', Icons.auto_awesome),
-              _buildModalStep('3', 'Quality Confidence & Logistics', 'Quality scoring and route-optimized multi-pickup dispatch planning.', Icons.local_shipping_outlined),
-              _buildModalStep('4', 'Direct Payout & Settlement', 'Transparent digital payout directly to farmers with zero middlemen deduction.', Icons.payments_outlined),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF164E2A),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('GOT IT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 14),
+                Text(
+                  'How AgriConnect Works',
+                  style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.w700, fontSize: 18),
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+                Text(
+                  'AgriConnect is an end-to-end coordination engine bridging farmers, FPOs, wholesale buyers, and urban households.',
+                  style: AppTypography.bodySmall,
+                ),
+                const SizedBox(height: 14),
+                _buildModalStep('1', 'Supply & Demand Gathering', 'Farmers list produce (via voice/form) and bulk buyers post requirements.', Icons.input_rounded),
+                _buildModalStep('2', 'AI Smart Multi-Farmer Matching', 'Algorithm matches 500kg requirements across smallholder farm clusters.', Icons.auto_awesome),
+                _buildModalStep('3', 'Quality Confidence & Logistics', 'Quality scoring and route-optimized multi-pickup dispatch planning.', Icons.local_shipping_outlined),
+                _buildModalStep('4', 'Direct Payout & Settlement', 'Transparent digital payout directly to farmers with zero middlemen deduction.', Icons.payments_outlined),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF164E2A),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('GOT IT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),

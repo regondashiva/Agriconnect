@@ -60,13 +60,18 @@ class MyProduceScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              item.cropName,
-                              style: AppTypography.headlineSmall.copyWith(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
+                            Expanded(
+                              child: Text(
+                                item.cropName,
+                                style: AppTypography.headlineSmall.copyWith(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 8),
                             StatusChip.success(item.status),
                           ],
                         ),
