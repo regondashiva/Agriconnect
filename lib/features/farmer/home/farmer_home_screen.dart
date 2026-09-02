@@ -11,6 +11,7 @@ import '../../../shared/widgets/status_chip.dart';
 import '../produce/my_produce_screen.dart';
 import '../matches/farmer_matches_screen.dart';
 import '../orders/farmer_orders_screen.dart';
+import '../assistant/farmer_ai_agent_button.dart';
 
 class FarmerHomeScreen extends StatefulWidget {
   final AppState appState;
@@ -51,6 +52,8 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           ],
         ),
       ),
+      floatingActionButton: FarmerAiAgentButton(appState: widget.appState),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentTabIndex,

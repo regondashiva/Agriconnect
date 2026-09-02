@@ -56,3 +56,10 @@ flutter run
 
 ## 📱 Quick Role Switcher for SIH Evaluators
 Tap the **Role Badge** on any screen's header to open the **Role Switcher Sheet** and test all 4 user journeys instantly.
+
+---
+
+## 🤖 AI Engineering & Backend Integration
+For the complete schema, payloads, and ML model requirements, see:
+- [AI Data Fields Specification Document](file:///c:/Users/shiva/OneDrive/Desktop/Agriconnect/AI_DATA_SPECIFICATION.md)
+

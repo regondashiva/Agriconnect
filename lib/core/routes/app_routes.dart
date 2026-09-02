@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../features/splash/splash_screen.dart';
 import '../../features/landing/landing_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/otp_screen.dart';
@@ -40,6 +41,9 @@ class AppRoutes {
   static Route<dynamic> generateRoute(RouteSettings settings, AppState appState) {
     switch (settings.name) {
       case '/':
+        return MaterialPageRoute(builder: (_) => SplashScreen(appState: appState));
+
+      case '/landing':
         return MaterialPageRoute(builder: (_) => LandingScreen(appState: appState));
 
       case '/login':
