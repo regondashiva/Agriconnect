@@ -24,19 +24,24 @@ class ConsumerProductDetailsScreen extends StatefulWidget {
 
 class _ConsumerProductDetailsScreenState
     extends State<ConsumerProductDetailsScreen> {
-  double _selectedQuantity = 2.0;
+  double _selectedQuantity = 1.0;
 
   @override
   Widget build(BuildContext context) {
     final double totalPrice = widget.product.pricePerKg * _selectedQuantity;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF8FAF8),
       appBar: AppBar(
         title: Text(widget.product.name),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,14 +49,15 @@ class _ConsumerProductDetailsScreenState
               // Hero Product Card
               Center(
                 child: Container(
-                  width: 120,
-                  height: 120,
+                  width: 130,
+                  height: 130,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
                     boxShadow: const [
                       BoxShadow(
-                        color: Color(0x12000767),
+                        color: Color(0x0F000000),
                         offset: Offset(0, 6),
                         blurRadius: 16,
                       ),
@@ -68,31 +74,54 @@ class _ConsumerProductDetailsScreenState
 
               const SizedBox(height: 20),
 
+              // Title, Unit, Price & Discount
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.product.name,
+                          style: AppTypography.headlineMedium.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${widget.product.unit} • ${widget.product.harvestFreshness}',
+                          style: AppTypography.bodySmall.copyWith(color: const Color(0xFF64748B)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        widget.product.name,
-                        style: AppTypography.headlineMedium.copyWith(
-                          fontWeight: FontWeight.w800,
+                        '₹${widget.product.pricePerKg.toInt()}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 20,
+                          color: Color(0xFF164E2A),
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Fresh Harvest • 100% Farm Sourced',
-                        style: AppTypography.bodySmall,
-                      ),
+                      if (widget.product.mrpPrice > widget.product.pricePerKg)
+                        Text(
+                          'MRP ₹${widget.product.mrpPrice.toInt()}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF94A3B8),
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
                     ],
-                  ),
-                  Text(
-                    '₹${widget.product.pricePerKg.toInt()} / kg',
-                    style: AppTypography.headlineMedium.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.primary,
-                    ),
                   ),
                 ],
               ),
@@ -101,18 +130,24 @@ class _ConsumerProductDetailsScreenState
 
               // Source & Verification Badge Card
               AppCard(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Supply Source:', style: AppTypography.bodySmall),
-                        Text(
-                          widget.product.source,
-                          style: AppTypography.labelLarge.copyWith(
-                            color: AppColors.secondary,
-                            fontWeight: FontWeight.w700,
+                        const Text('Supply Source:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                        Flexible(
+                          child: Text(
+                            widget.product.source,
+                            style: const TextStyle(
+                              color: Color(0xFF164E2A),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
                           ),
                         ),
                       ],
@@ -121,10 +156,14 @@ class _ConsumerProductDetailsScreenState
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Distance to You:', style: AppTypography.bodySmall),
+                        const Text('Delivery Time:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
                         Text(
-                          '${widget.product.distanceKm} km (Direct Hub Delivery)',
-                          style: AppTypography.labelLarge,
+                          '⚡ ${widget.product.deliveryTime} (${widget.product.distanceKm} km)',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                            color: Color(0xFF0F172A),
+                          ),
                         ),
                       ],
                     ),
@@ -132,7 +171,7 @@ class _ConsumerProductDetailsScreenState
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Quality Grade:', style: AppTypography.bodySmall),
+                        const Text('Quality Grade:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
                         StatusChip.success(widget.product.qualityGrade),
                       ],
                     ),
@@ -140,13 +179,15 @@ class _ConsumerProductDetailsScreenState
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               // Quantity Selector
-              Text(
+              const Text(
                 'Select Quantity for Your Home',
-                style: AppTypography.labelLarge.copyWith(
-                  fontWeight: FontWeight.w700,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                  color: Color(0xFF0F172A),
                 ),
               ),
               const SizedBox(height: 12),
@@ -159,57 +200,60 @@ class _ConsumerProductDetailsScreenState
                       setState(() => _selectedQuantity -= 0.5);
                     }
                   }),
-                  const SizedBox(width: 24),
+                  const SizedBox(width: 20),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
-                      vertical: 12,
+                      vertical: 10,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primary, width: 2),
+                      border: Border.all(color: const Color(0xFF164E2A), width: 1.8),
                     ),
                     child: Text(
                       '${_selectedQuantity == _selectedQuantity.toInt() ? _selectedQuantity.toInt() : _selectedQuantity} kg',
-                      style: AppTypography.headlineSmall.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 17,
+                        color: Color(0xFF164E2A),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 24),
+                  const SizedBox(width: 20),
                   _buildQtyBtn(Icons.add, () {
                     setState(() => _selectedQuantity += 0.5);
                   }),
                 ],
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               // Total Calculation
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLow,
+                  color: const Color(0xFFF0FDF4),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFBBF7D0)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Total Amount:', style: AppTypography.labelLarge),
+                    const Text('Total Amount:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                     Text(
                       '₹${totalPrice.toStringAsFixed(0)}',
-                      style: AppTypography.headlineSmall.copyWith(
+                      style: const TextStyle(
                         fontWeight: FontWeight.w900,
-                        color: AppColors.primary,
+                        fontSize: 18,
+                        color: Color(0xFF164E2A),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               PrimaryButton(
                 text: 'ADD TO CART (₹${totalPrice.toStringAsFixed(0)})',
@@ -219,9 +263,10 @@ class _ConsumerProductDetailsScreenState
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Added $_selectedQuantity kg ${widget.product.name} to Cart'),
+                      backgroundColor: const Color(0xFF164E2A),
                       action: SnackBarAction(
                         label: 'VIEW CART',
-                        textColor: AppColors.harvestOrange,
+                        textColor: const Color(0xFFFEF3C7),
                         onPressed: () {
                           Navigator.pushNamed(context, '/consumer/cart');
                         },
@@ -245,12 +290,13 @@ class _ConsumerProductDetailsScreenState
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AppColors.surfaceContainer,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFCBD5E1)),
         ),
-        child: Icon(icon, color: AppColors.primary, size: 24),
+        child: Icon(icon, color: const Color(0xFF164E2A), size: 22),
       ),
     );
   }

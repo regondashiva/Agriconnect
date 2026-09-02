@@ -227,6 +227,18 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void removeFromCart(String productId) {
+    final index = _cart.indexWhere((item) => item.product.id == productId);
+    if (index >= 0) {
+      if (_cart[index].quantityKg > 1.0) {
+        _cart[index].quantityKg -= 1.0;
+      } else {
+        _cart.removeAt(index);
+      }
+      notifyListeners();
+    }
+  }
+
   void updateCartQuantity(String productId, double newQty) {
     if (newQty <= 0) {
       _cart.removeWhere((item) => item.product.id == productId);
