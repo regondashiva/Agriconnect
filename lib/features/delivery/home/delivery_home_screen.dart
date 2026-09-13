@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../services/api_service.dart';
 import '../../../services/app_state.dart';
 import '../trips/active_trip_screen.dart';
 import '../history/delivery_history_screen.dart';
@@ -18,7 +19,21 @@ class DeliveryHomeScreen extends StatefulWidget {
 class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
   int _currentTabIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    // Live cloud synchronization per Sprint Update (GET /api/v1/delivery/wallet & available)
+    widget.appState.syncDeliveryWallet();
+    widget.appState.syncAvailableDeliveryTrips();
+  }
+
   void _startTrip(Map<String, dynamic> trip) {
+    // Live trip accept per Sprint Update (POST /api/v1/delivery/trips/:tripId/accept)
+    final tripId = (trip['orderId'] ?? trip['id'] ?? '').toString();
+    if (tripId.isNotEmpty) {
+      ApiService.instance.acceptDeliveryTrip(tripId);
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(

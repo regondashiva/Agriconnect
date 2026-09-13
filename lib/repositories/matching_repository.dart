@@ -87,33 +87,7 @@ class MatchingRepository {
       ];
     }
 
-    // 3. Clean default match if no local inventory matches yet
-    return [
-      SupplyMatch(
-        id: 'MATCH-${DateTime.now().millisecondsSinceEpoch}',
-        requirementId: 'REQ-${DateTime.now().millisecondsSinceEpoch}',
-        cropName: crop,
-        requiredQuantityKg: quantityKg,
-        matchedQuantityKg: quantityKg,
-        matchScorePercent: 91.0,
-        qualityScore: 90.0,
-        confidenceScore: 92.0,
-        contributors: [
-          SupplyContributor(
-            farmerId: 'farmer_partner_01',
-            farmerName: 'Cluster Verified Farmer',
-            location: 'Chevella Agro Cluster',
-            quantityKg: quantityKg,
-            payoutAmount: quantityKg * 24.0,
-          ),
-        ],
-        buyerName: 'Bulk Buyer',
-        deliveryLocation: 'Hyderabad Wholesale Mandi Hub',
-        totalEstimatedValue: quantityKg * 24.0,
-        totalDistanceKm: 14.2,
-        estimatedTravelTime: '1 hr 15 mins',
-        vehicleCapacity: '1.2 Ton Mini-Truck',
-      ),
-    ];
+    // 3. No match found across remote matching engine or farmer inventory
+    return [];
   }
 }

@@ -89,15 +89,32 @@ class BulkRequirement {
     );
   }
 
-  /// Exact contract payload for Module 2: POST /api/v1/buyer/requirements
+  /// Exact contract payload for Module 2: POST /api/v1/buyer/requirements (Flattened per Sprint Update)
   Map<String, dynamic> toContractJson({String? overrideBuyerId}) {
     final effectiveBuyerId = (overrideBuyerId != null && overrideBuyerId.isNotEmpty)
         ? overrideBuyerId
         : buyerId;
+    final cleanCrop = cropName.toLowerCase().split(' ').first;
     return {
       'buyer_id': effectiveBuyerId,
+      'crop_name': cleanCrop,
+      'crop': cleanCrop,
+      'variety': variety.isNotEmpty ? variety : 'Standard',
+      'required_quantity_kg': requiredQuantityKg,
+      'quantity_kg': requiredQuantityKg,
+      'target_price_min': priceRangeMin,
+      'target_price_max': priceRangeMax,
+      'required_by_date': requiredDate.toUtc().toIso8601String(),
+      'delivery_city': deliveryLocation.split(',').first.trim(),
+      'delivery_state': 'Telangana',
+      'delivery_latitude': deliveryLatitude,
+      'delivery_longitude': deliveryLongitude,
+      'delivery_address': deliveryLocation,
+      'quality_grade': qualityGrade,
+      // Backward-compatible envelope
       'data': {
-        'crop_name': cropName.toLowerCase().split(' ').first,
+        'crop_name': cleanCrop,
+        'variety': variety.isNotEmpty ? variety : 'Standard',
         'required_quantity_kg': requiredQuantityKg,
         'target_price_min': priceRangeMin,
         'target_price_max': priceRangeMax,

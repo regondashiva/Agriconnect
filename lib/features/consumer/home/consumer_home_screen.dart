@@ -77,6 +77,8 @@ class _ConsumerHomeScreenState extends State<ConsumerHomeScreen> {
   void initState() {
     super.initState();
     _startOffersTimer();
+    // Live cloud database sync per Sprint Update (GET /api/v1/consumer/products)
+    widget.appState.syncConsumerProductsFromBackend();
   }
 
   void _startOffersTimer() {

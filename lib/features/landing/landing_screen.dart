@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_typography.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/app_state.dart';
-import '../../shared/widgets/role_switcher_sheet.dart';
 
 class LandingScreen extends StatefulWidget {
   final AppState? appState;
@@ -13,60 +11,13 @@ class LandingScreen extends StatefulWidget {
   State<LandingScreen> createState() => _LandingScreenState();
 }
 
-class _LandingScreenState extends State<LandingScreen> with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late AnimationController _floatController;
-  late Animation<double> _heroScaleAnimation;
-  late Animation<double> _heroFadeAnimation;
-  late Animation<Offset> _contentSlideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // 1. Entrance animation (500-700ms)
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 650),
-    );
-
-    _heroFadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
-    );
-
-    _heroScaleAnimation = Tween<double>(begin: 0.96, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _fadeController,
-        curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    _contentSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.08),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _fadeController,
-        curve: const Interval(0.2, 1.0, curve: Curves.easeOutQuad),
-      ),
-    );
-
-    _fadeController.forward();
-
-    // 2. Very subtle gentle floating effect (subtle, non-distracting)
-    _floatController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3200),
-      lowerBound: -2.0,
-      upperBound: 2.0,
-    )..repeat(reverse: true);
-  }
+class _LandingScreenState extends State<LandingScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
 
   @override
   void dispose() {
-    _fadeController.dispose();
-    _floatController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -74,307 +25,23 @@ class _LandingScreenState extends State<LandingScreen> with TickerProviderStateM
     Navigator.pushNamed(context, '/login');
   }
 
-  void _openProfile(BuildContext context) {
-    if (widget.appState != null) {
-      _showProfileBottomSheet(context, widget.appState!);
+  void _onCtaPressed() {
+    if (_currentPage < 2) {
+      _pageController.animateToPage(
+        _currentPage + 1,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeInOutCubic,
+      );
     } else {
       _navigateToAuth();
     }
   }
 
-  void _showProfileBottomSheet(BuildContext context, AppState state) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
-          ),
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: AppColors.outlineVariant,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: const Color(0xFF15803D),
-                      child: Text(
-                        state.currentUser.name.isNotEmpty
-                            ? state.currentUser.name[0].toUpperCase()
-                            : 'U',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  state.currentUser.name,
-                                  style: AppTypography.headlineSmall.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              const Icon(Icons.verified, color: Color(0xFF15803D), size: 16),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE8F5E9),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              state.currentUser.roleDisplayName.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF15803D),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Divider(),
-                const SizedBox(height: 4),
-                _buildProfileDetailRow(Icons.phone_rounded, 'Phone', state.currentUser.phoneNumber),
-                _buildProfileDetailRow(Icons.location_on_rounded, 'Location', state.currentUser.location),
-                _buildProfileDetailRow(Icons.language_rounded, 'Language', state.currentUser.preferredLanguage ?? 'Telugu / English'),
-                _buildProfileDetailRow(Icons.verified_user_rounded, 'SIH Tag', 'SIH-2026-AGR-VERIFIED'),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (_) => RoleSwitcherSheet(appState: state),
-                          );
-                        },
-                        icon: const Icon(Icons.swap_horiz, size: 18),
-                        label: const Text('Switch Role'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF15803D),
-                          side: const BorderSide(color: Color(0xFF15803D)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _navigateToAuth();
-                        },
-                        icon: const Icon(Icons.logout_rounded, size: 18),
-                        label: const Text('Change User'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF15803D),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileDetailRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: const Color(0xFF6B7280)),
-          const SizedBox(width: 8),
-          Text(
-            '$label: ',
-            style: const TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF4B5563),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF111827),
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showHowItWorksModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'How AgriConnect Works',
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF111827),
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 14),
-              _buildModalStepItem(
-                number: '1',
-                title: 'Farmer / FPO Lists Produce',
-                desc: 'Upload crop details via Voice AI or manual input with verified quality standards.',
-              ),
-              _buildModalStepItem(
-                number: '2',
-                title: 'AI Matches Demand',
-                desc: 'Smart algorithms match supplies with bulk buyers and household purchase orders.',
-              ),
-              _buildModalStepItem(
-                number: '3',
-                title: 'FPO Smart Aggregation',
-                desc: 'Combines multiple smallholder farmer batches into wholesale commercial lots.',
-              ),
-              _buildModalStepItem(
-                number: '4',
-                title: 'Optimized Logistics & Payout',
-                desc: 'Multi-stop pickup routes collect produce directly with instant Jan Dhan bank settlement.',
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _navigateToAuth();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF15803D),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Get Started with AgriConnect',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildModalStepItem({required String number, required String title, required String desc}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 26,
-            height: 26,
-            decoration: const BoxDecoration(
-              color: Color(0xFFDCFCE7),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                number,
-                style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF15803D), fontSize: 13),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: Color(0xFF111827))),
-                const SizedBox(height: 2),
-                Text(desc, style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563), height: 1.3)),
-              ],
-            ),
-          ),
-        ],
-      ),
+  void _goToPage(int page) {
+    _pageController.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeInOutCubic,
     );
   }
 
@@ -382,106 +49,135 @@ class _LandingScreenState extends State<LandingScreen> with TickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. COMPACT HEADER (Clean Branding + SIH 2026 Badge)
-              _buildCompactHeader(context),
-
-              const SizedBox(height: 10),
-
-              // 2. LARGE FARMER HERO VISUAL (Main Focus with Entrance & Float Animation)
-              _buildLargeHeroVisual(context),
-
-              const SizedBox(height: 18),
-
-              // 3. HERO CONTENT & CALL TO ACTION
-              _buildHeroContent(context),
-
-              const SizedBox(height: 24),
-
-              // 4. AGRICONNECT COMPACT VALUE STRIP
-              _buildValueStrip(context),
-
-              const SizedBox(height: 28),
-
-              // 5. HOW AGRICONNECT WORKS (Mobile-Friendly Clean Flow)
-              _buildHowAgriConnectWorks(context),
-
-              const SizedBox(height: 28),
-
-              // 6. FINAL CALL TO ACTION CARD
-              _buildFinalCtaSection(context),
-
-              const SizedBox(height: 24),
-            ],
+      body: Stack(
+        children: [
+          // Botanical Leaf Watermarks at bottom corners (matching reference)
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _BotanicalLeafPainter(),
+              ),
+            ),
           ),
-        ),
+
+          // Main Onboarding PageView
+          SafeArea(
+            child: Column(
+              children: [
+                // Top Action Bar with Logo & Skip Button
+                _buildTopBar(),
+
+                // 3 Swipeable Carousel Screens
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const BouncingScrollPhysics(),
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    children: [
+                      _buildScreenOne(),
+                      _buildScreenTwo(),
+                      _buildScreenThree(),
+                    ],
+                  ),
+                ),
+
+                // Bottom Action Area: Pill CTA + Interactive Pagination Dots
+                _buildBottomControls(),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ==========================================
-  // 1. COMPACT HEADER (LEFT: LOGO, RIGHT: SIH BADGE)
-  // ==========================================
-  Widget _buildCompactHeader(BuildContext context) {
+  // ===========================================================================
+  // TOP BAR (AgriConnect Branding on Left, Skip on Right)
+  // ===========================================================================
+  Widget _buildTopBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left: Logo + Wordmark
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF15803D),
-                  borderRadius: BorderRadius.circular(10),
+          // Screen 1 shows full logo + tagline; Screens 2 & 3 show subtle brand mark
+          Expanded(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF15803D),
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF15803D).withValues(alpha: 0.22),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.eco_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.eco_rounded,
-                  color: Colors.white,
-                  size: 20,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'AgriConnect',
+                        style: GoogleFonts.inter(
+                          fontSize: 17.5,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F2617),
+                          letterSpacing: -0.4,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (_currentPage == 0)
+                        Text(
+                          'PEOPLE • PRODUCE • PROSPER',
+                          style: GoogleFonts.inter(
+                            fontSize: 7.2,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF6B7280),
+                            letterSpacing: 1.1,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'AgriConnect',
-                style: TextStyle(
-                  color: Color(0xFF0F2617),
-                  fontWeight: FontWeight.w900,
-                  fontSize: 18,
-                  letterSpacing: -0.4,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
 
-          // Right: SIH 2026 Pill Badge
-          InkWell(
-            onTap: () => _openProfile(context),
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFDE68A)),
-              ),
-              child: const Text(
-                'SIH 2026',
-                style: TextStyle(
-                  color: Color(0xFF92400E),
-                  fontWeight: FontWeight.w800,
-                  fontSize: 11,
-                  letterSpacing: 0.2,
-                ),
+          // Skip Button
+          TextButton(
+            onPressed: _navigateToAuth,
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF15803D),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              'Skip',
+              style: GoogleFonts.inter(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF15803D),
               ),
             ),
           ),
@@ -490,36 +186,170 @@ class _LandingScreenState extends State<LandingScreen> with TickerProviderStateM
     );
   }
 
-  // ==========================================
-  // 2. LARGE FARMER HERO VISUAL
-  // ==========================================
-  Widget _buildLargeHeroVisual(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _fadeController,
-      builder: (context, child) {
-        return Opacity(
-          opacity: _heroFadeAnimation.value,
-          child: Transform.scale(
-            scale: _heroScaleAnimation.value,
-            child: SizedBox(
-              width: double.infinity,
-              height: 280,
-              child: Image.asset(
-                'assets/images/hero_farmer_connect.jpg',
-                width: double.infinity,
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                errorBuilder: (_, __, ___) => Image.asset(
-                  'assets/images/hero_farmer.jpg',
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 240,
-                    color: const Color(0xFFDCFCE7),
-                    child: const Center(
-                      child: Icon(Icons.agriculture_rounded, size: 60, color: Color(0xFF15803D)),
+  // ===========================================================================
+  // SCREEN 1: INTRODUCTION
+  // "Good Produce Finds Better Opportunities"
+  // ===========================================================================
+  Widget _buildScreenOne() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+
+                    // Multi-line headline with "Opportunities" highlighted in vivid green
+                    RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.inter(
+                          fontSize: 31,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF111827),
+                          height: 1.15,
+                          letterSpacing: -0.8,
+                        ),
+                        children: const [
+                          TextSpan(text: 'Good\nProduce\nFinds Better\n'),
+                          TextSpan(
+                            text: 'Opportunities',
+                            style: TextStyle(
+                              color: Color(0xFF16A34A),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+
+                    const SizedBox(height: 10),
+
+                    // Short supporting text
+                    Text(
+                      'Connecting farmers, buyers and consumers for a stronger, fairer tomorrow.',
+                      style: GoogleFonts.inter(
+                        fontSize: 13.5,
+                        color: const Color(0xFF4B5563),
+                        height: 1.35,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Visual Area with Farmer Image + Calligraphy Badge
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          // Farmer in field image with gentle curve & soft bottom blend
+                          Positioned.fill(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.asset(
+                                    'assets/images/onboarding_farmer.jpg',
+                                    fit: BoxFit.cover,
+                                    alignment: const Alignment(0, -0.2),
+                                    errorBuilder: (_, __, ___) => Image.asset(
+                                      'assets/images/hero_farmer_connect.jpg',
+                                      fit: BoxFit.cover,
+                                      alignment: const Alignment(0, -0.2),
+                                    ),
+                                  ),
+                                  // Soft vignette overlay at bottom to ensure flawless button readability
+                                  Positioned(
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: 90,
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.white.withValues(alpha: 0.0),
+                                            Colors.white.withValues(alpha: 0.75),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // Floating Artistic Tag: "Farmers Grow We Connect"
+                          Positioned(
+                            top: 24,
+                            left: 14,
+                            child: Transform.rotate(
+                              angle: -0.09,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.88),
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.06),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Farmers Grow',
+                                      style: GoogleFonts.caveat(
+                                        fontSize: 16.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF2E5E3A),
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                    Text(
+                                      'We Connect',
+                                      style: GoogleFonts.caveat(
+                                        fontSize: 16.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF15803D),
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 60,
+                                      height: 2.2,
+                                      margin: const EdgeInsets.only(top: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF16A34A),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ),
               ),
             ),
@@ -529,449 +359,686 @@ class _LandingScreenState extends State<LandingScreen> with TickerProviderStateM
     );
   }
 
-  // ==========================================
-  // 3. HERO CONTENT & CALL TO ACTION
-  // ==========================================
-  Widget _buildHeroContent(BuildContext context) {
-    return SlideTransition(
-      position: _contentSlideAnimation,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Main Heading
-            const Text(
-              'Sell Smarter.\nConnect Directly.',
-              style: TextStyle(
-                fontSize: 27,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF0F2617),
-                height: 1.15,
-                letterSpacing: -0.6,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Short Supporting Subtitle
-            const Text(
-              'AI-powered connections between farmers, buyers and consumers.',
-              style: TextStyle(
-                fontSize: 13.5,
-                color: Color(0xFF4B5563),
-                height: 1.35,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            // Primary CTA Button: GET STARTED
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _navigateToAuth,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF15803D),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+  // ===========================================================================
+  // SCREEN 2: DIRECT CONNECTION
+  // "Direct Connections"
+  // ===========================================================================
+  Widget _buildScreenTwo() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'GET STARTED',
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.6,
+                    const SizedBox(height: 12),
+
+                    // Multi-line headline
+                    RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.inter(
+                          fontSize: 31,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF111827),
+                          height: 1.15,
+                          letterSpacing: -0.8,
+                        ),
+                        children: const [
+                          TextSpan(text: 'Direct\n'),
+                          TextSpan(
+                            text: 'Connections',
+                            style: TextStyle(
+                              color: Color(0xFF16A34A),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward_rounded, size: 18),
+
+                    const SizedBox(height: 10),
+
+                    // Short supporting text
+                    Text(
+                      'Bringing farmers and buyers together, removing middlemen for fairer prices.',
+                      style: GoogleFonts.inter(
+                        fontSize: 13.5,
+                        color: const Color(0xFF4B5563),
+                        height: 1.35,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Visual Area with Handshake + Circular Flow & Floating Card
+                    Expanded(
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Handshake Image
+                          Positioned.fill(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.asset(
+                                    'assets/images/onboarding_handshake.jpg',
+                                    fit: BoxFit.cover,
+                                    alignment: const Alignment(0, -0.3),
+                                  ),
+                                  // Soft bottom gradient
+                                  Positioned(
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: 110,
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.white.withValues(alpha: 0.0),
+                                            Colors.white.withValues(alpha: 0.75),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // Floating Connection Flow Overlay: Farmers <--> Leaf <--> Buyers
+                          Positioned(
+                            top: constraints.maxHeight * 0.22,
+                            left: 20,
+                            right: 20,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.88),
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  // Farmers Node
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 44,
+                                        height: 44,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFDCFCE7),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.person_rounded,
+                                          color: Color(0xFF15803D),
+                                          size: 24,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Farmers',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF1F2937),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  // Dotted / Hub connector
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 14,
+                                        height: 2,
+                                        color: const Color(0xFF16A34A).withValues(alpha: 0.5),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF16A34A),
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFF16A34A).withValues(alpha: 0.3),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          Icons.eco_rounded,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        width: 14,
+                                        height: 2,
+                                        color: const Color(0xFF16A34A).withValues(alpha: 0.5),
+                                      ),
+                                    ],
+                                  ),
+
+                                  // Buyers Node
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 44,
+                                        height: 44,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFFEF3C7),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.shopping_cart_rounded,
+                                          color: Color(0xFFD97706),
+                                          size: 22,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Buyers',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF1F2937),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // Floating Card near bottom: "Better Prices for Better Lives >"
+                          Positioned(
+                            bottom: 18,
+                            left: 16,
+                            right: 16,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.95),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(
+                                      Icons.bar_chart_rounded,
+                                      color: Color(0xFF15803D),
+                                      size: 22,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Better Prices\nfor Better Lives',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF111827),
+                                        height: 1.2,
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: Color(0xFF6B7280),
+                                    size: 22,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
             ),
+          ),
+        );
+      },
+    );
+  }
 
-            const SizedBox(height: 12),
+  // ===========================================================================
+  // SCREEN 3: SMART AGRICULTURE
+  // "Fresh Produce Brighter Futures"
+  // ===========================================================================
+  Widget _buildScreenThree() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
 
-            // Secondary Action: Learn How It Works ->
-            Center(
-              child: InkWell(
-                onTap: () => _showHowItWorksModal(context),
-                borderRadius: BorderRadius.circular(8),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Learn How It Works',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF15803D),
+                    // Multi-line headline
+                    RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.inter(
+                          fontSize: 31,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF111827),
+                          height: 1.15,
+                          letterSpacing: -0.8,
                         ),
+                        children: const [
+                          TextSpan(text: 'Fresh Produce\nBrighter\n'),
+                          TextSpan(
+                            text: 'Futures',
+                            style: TextStyle(
+                              color: Color(0xFF16A34A),
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF15803D)),
-                    ],
-                  ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Short supporting text
+                    Text(
+                      'From farms to homes, we enable a sustainable and prosperous food ecosystem.',
+                      style: GoogleFonts.inter(
+                        fontSize: 13.5,
+                        color: const Color(0xFF4B5563),
+                        height: 1.35,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Visual Area with Farm Produce Crate + 3 Floating Benefit Pills
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          // Wooden produce crate image
+                          Positioned.fill(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.asset(
+                                    'assets/images/onboarding_produce.jpg',
+                                    fit: BoxFit.cover,
+                                    alignment: const Alignment(0, 0.1),
+                                  ),
+                                  // Soft bottom gradient
+                                  Positioned(
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: 100,
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.white.withValues(alpha: 0.0),
+                                            Colors.white.withValues(alpha: 0.75),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // 3 Floating Benefit Chips Stacked on the Right
+                          Positioned(
+                            top: 20,
+                            right: 14,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                _buildBenefitChip(
+                                  icon: Icons.eco_rounded,
+                                  iconColor: const Color(0xFF15803D),
+                                  iconBg: const Color(0xFFDCFCE7),
+                                  label: 'Quality\nProduce',
+                                ),
+                                const SizedBox(height: 10),
+                                _buildBenefitChip(
+                                  icon: Icons.local_shipping_rounded,
+                                  iconColor: const Color(0xFFB45309),
+                                  iconBg: const Color(0xFFFEF3C7),
+                                  label: 'Faster\nDelivery',
+                                ),
+                                const SizedBox(height: 10),
+                                _buildBenefitChip(
+                                  icon: Icons.groups_rounded,
+                                  iconColor: const Color(0xFF0284C7),
+                                  iconBg: const Color(0xFFE0F2FE),
+                                  label: 'Stronger\nCommunities',
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Farm Fresh Crate Stamped Badge overlay at bottom left of crate
+                          Positioned(
+                            bottom: 24,
+                            left: 18,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.4),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.eco_rounded, color: Colors.white, size: 14),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'FARM FRESH DIRECT',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  // ==========================================
-  // 4. AGRICONNECT VALUE STRIP (COMPACT & CLEAN)
-  // ==========================================
-  Widget _buildValueStrip(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9FBFA),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _buildValueItem(
-                  icon: Icons.eco_rounded,
-                  iconColor: const Color(0xFF15803D),
-                  iconBg: const Color(0xFFDCFCE7),
-                  title: 'Better Prices',
-                  subtitle: 'Direct farmer-to-buyer deals',
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildValueItem(
-                  icon: Icons.handshake_rounded,
-                  iconColor: const Color(0xFF0369A1),
-                  iconBg: const Color(0xFFE0F2FE),
-                  title: 'Smart Matching',
-                  subtitle: 'AI finds relevant demand',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _buildValueItem(
-                  icon: Icons.local_shipping_rounded,
-                  iconColor: const Color(0xFFB45309),
-                  iconBg: const Color(0xFFFEF3C7),
-                  title: 'Smart Logistics',
-                  subtitle: 'Efficient pickup & delivery',
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildValueItem(
-                  icon: Icons.shopping_basket_rounded,
-                  iconColor: const Color(0xFF7C3AED),
-                  iconBg: const Color(0xFFF3E8FF),
-                  title: 'Fresh for Consumers',
-                  subtitle: 'Direct access to fresh produce',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildValueItem({
+  // Floating benefit chip for Screen 3
+  Widget _buildBenefitChip({
     required IconData icon,
     required Color iconColor,
     required Color iconBg,
-    required String title,
-    required String subtitle,
+    required String label,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: iconBg,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: iconColor, size: 17),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF111827),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 1),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: Color(0xFF6B7280),
-                  height: 1.25,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ==========================================
-  // 5. HOW AGRICONNECT WORKS (CLEAN STEP WORKFLOW)
-  // ==========================================
-  Widget _buildHowAgriConnectWorks(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section Title
-          const Text(
-            'How AgriConnect Works',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF111827),
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'End-to-end transparent supply chain from farm gate to market.',
-            style: TextStyle(
-              fontSize: 11.5,
-              color: Color(0xFF6B7280),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Clean Vertical Step Flow
-          _buildWorkflowStep(
-            stepNumber: '1',
-            title: 'Farmer / FPO',
-            description: 'Farmers list produce with verified harvest & quality standards.',
-            isLast: false,
-          ),
-          _buildWorkflowStep(
-            stepNumber: '2',
-            title: 'List Produce',
-            description: 'Upload produce details with AI photo grading or vernacular Voice AI.',
-            isLast: false,
-          ),
-          _buildWorkflowStep(
-            stepNumber: '3',
-            title: 'AI Demand Matching',
-            description: 'Algorithms automatically match supply batches with bulk buyers.',
-            isLast: false,
-          ),
-          _buildWorkflowStep(
-            stepNumber: '4',
-            title: 'Smart Aggregation',
-            description: 'FPOs bundle multiple smallholder lots into wholesale consignments.',
-            isLast: false,
-          ),
-          _buildWorkflowStep(
-            stepNumber: '5',
-            title: 'Optimized Logistics',
-            description: 'Coordinated multi-stop pickup trucks collect produce from hubs.',
-            isLast: false,
-          ),
-          _buildWorkflowStep(
-            stepNumber: '6',
-            title: 'Buyer / Consumer',
-            description: 'Guaranteed quality delivery with instant direct Jan Dhan settlement.',
-            isLast: true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWorkflowStep({
-    required String stepNumber,
-    required String title,
-    required String description,
-    required bool isLast,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Left timeline node + vertical line
-        Column(
-          children: [
-            Container(
-              width: 26,
-              height: 26,
-              decoration: BoxDecoration(
-                color: const Color(0xFF15803D),
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFDCFCE7), width: 2),
-              ),
-              child: Center(
-                child: Text(
-                  stepNumber,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-            ),
-            if (!isLast)
-              Container(
-                width: 2,
-                height: 36,
-                color: const Color(0xFFDCFCE7),
-              ),
-          ],
-        ),
-
-        const SizedBox(width: 12),
-
-        // Right content
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF111827),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF4B5563),
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ==========================================
-  // 6. FINAL CALL TO ACTION CARD
-  // ==========================================
-  Widget _buildFinalCtaSection(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F2617),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x1A0F2617),
-            blurRadius: 14,
-            offset: Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.09),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Ready to connect\nyour farm to opportunity?',
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              height: 1.2,
-              letterSpacing: -0.3,
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: iconBg,
+              shape: BoxShape.circle,
             ),
+            child: Icon(icon, color: iconColor, size: 17),
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Join thousands of farmers, FPOs, and buyers on AgriConnect.',
-            style: TextStyle(
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: GoogleFonts.inter(
               fontSize: 11.5,
-              color: Color(0xFF9CA3AF),
-              height: 1.35,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1F2937),
+              height: 1.15,
             ),
           ),
-          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // BOTTOM CONTROLS (Pill CTA Button + Interactive Pagination Dots)
+  // ===========================================================================
+  Widget _buildBottomControls() {
+    final String ctaText;
+    switch (_currentPage) {
+      case 0:
+        ctaText = 'Get Started →';
+        break;
+      case 1:
+        ctaText = 'Continue →';
+        break;
+      case 2:
+      default:
+        ctaText = "Let's Get Started →";
+        break;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 6, 24, 18),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Primary CTA Capsule Button
           SizedBox(
             width: double.infinity,
-            height: 48,
+            height: 52,
             child: ElevatedButton(
-              onPressed: _navigateToAuth,
+              onPressed: _onCtaPressed,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF22C55E),
-                foregroundColor: const Color(0xFF0F2617),
+                backgroundColor: const Color(0xFF15803D),
+                foregroundColor: Colors.white,
                 elevation: 0,
+                shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(26),
                 ),
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'GET STARTED',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  SizedBox(width: 6),
-                  Icon(Icons.arrow_forward_rounded, size: 18),
-                ],
+              child: Text(
+                ctaText,
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
               ),
             ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // 3 Interactive Pagination Dots
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(3, (index) {
+              final bool isActive = index == _currentPage;
+              return GestureDetector(
+                onTap: () => _goToPage(index),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    width: isActive ? 22 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? const Color(0xFF15803D)
+                          : const Color(0xFFE5E7EB),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              );
+            }),
           ),
         ],
       ),
     );
   }
+}
+
+// =============================================================================
+// BOTANICAL LEAF WATERMARK PAINTER (Matches bottom corner flourishes in image)
+// =============================================================================
+class _BotanicalLeafPainter extends CustomPainter {
+  const _BotanicalLeafPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF86EFAC).withValues(alpha: 0.35)
+      ..style = PaintingStyle.fill;
+
+    // Bottom-Left Organic Foliage
+    final pathLeft = Path();
+    pathLeft.moveTo(-10, size.height + 10);
+    pathLeft.quadraticBezierTo(
+      size.width * 0.12,
+      size.height - 70,
+      size.width * 0.18,
+      size.height - 85,
+    );
+    pathLeft.quadraticBezierTo(
+      size.width * 0.14,
+      size.height - 40,
+      size.width * 0.08,
+      size.height + 10,
+    );
+    pathLeft.close();
+    canvas.drawPath(pathLeft, paint);
+
+    // Second smaller leaf on bottom left
+    final pathLeft2 = Path();
+    pathLeft2.moveTo(0, size.height + 10);
+    pathLeft2.quadraticBezierTo(
+      size.width * 0.08,
+      size.height - 35,
+      size.width * 0.12,
+      size.height - 40,
+    );
+    pathLeft2.quadraticBezierTo(
+      size.width * 0.08,
+      size.height - 15,
+      0,
+      size.height + 10,
+    );
+    pathLeft2.close();
+    canvas.drawPath(
+      pathLeft2,
+      Paint()
+        ..color = const Color(0xFF4ADE80).withValues(alpha: 0.25)
+        ..style = PaintingStyle.fill,
+    );
+
+    // Bottom-Right Organic Foliage
+    final pathRight = Path();
+    pathRight.moveTo(size.width + 10, size.height + 10);
+    pathRight.quadraticBezierTo(
+      size.width * 0.88,
+      size.height - 75,
+      size.width * 0.82,
+      size.height - 90,
+    );
+    pathRight.quadraticBezierTo(
+      size.width * 0.86,
+      size.height - 45,
+      size.width * 0.92,
+      size.height + 10,
+    );
+    pathRight.close();
+    canvas.drawPath(pathRight, paint);
+
+    // Second smaller leaf on bottom right
+    final pathRight2 = Path();
+    pathRight2.moveTo(size.width, size.height + 10);
+    pathRight2.quadraticBezierTo(
+      size.width * 0.92,
+      size.height - 40,
+      size.width * 0.88,
+      size.height - 45,
+    );
+    pathRight2.quadraticBezierTo(
+      size.width * 0.92,
+      size.height - 20,
+      size.width,
+      size.height + 10,
+    );
+    pathRight2.close();
+    canvas.drawPath(
+      pathRight2,
+      Paint()
+        ..color = const Color(0xFF4ADE80).withValues(alpha: 0.25)
+        ..style = PaintingStyle.fill,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

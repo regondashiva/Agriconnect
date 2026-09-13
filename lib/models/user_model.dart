@@ -183,74 +183,77 @@ class User {
   /// Endpoint: PATCH /api/v1/users/profile
   Map<String, dynamic> toProfilePayload() {
     final langCode = _langCode(preferredLanguage);
+    final payload = <String, dynamic>{
+      'full_name': name,
+      'preferred_language': langCode,
+      'role': User.roleToString(role),
+      'location': location,
+      'farm_location': location,
+      if (primaryCrops != null && primaryCrops!.isNotEmpty) 'primary_crops': primaryCrops,
+      if (landSizeAcres != null) 'land_size_acres': landSizeAcres,
+      if (fpoCluster != null && fpoCluster!.isNotEmpty) 'fpo_cluster_assigned': fpoCluster,
+      if (upiId != null && upiId!.isNotEmpty) 'upi_id': upiId,
+      if (bankName != null && bankName!.isNotEmpty) 'bank_name': bankName,
+    };
+
     switch (role) {
       case UserRole.farmer:
         final locParts = location.split(',').map((s) => s.trim()).toList();
         final v = village ?? (locParts.isNotEmpty ? locParts[0] : 'Medchal');
         final d = district ?? (locParts.length > 1 ? locParts[1] : 'Medchal-Malkajgiri');
         final s = state ?? (locParts.length > 2 ? locParts[2] : 'Telangana');
-        return {
-          'full_name': name,
-          'preferred_language': langCode,
-          'farmer_profile': {
-            'village': v,
-            'district': d,
-            'state': s,
-            'pincode': pincode ?? '501401',
-            'latitude': latitude ?? 17.6294,
-            'longitude': longitude ?? 78.4828,
-            'land_size_acres': landSizeAcres ?? 2.5,
-          },
+        payload['farmer_profile'] = {
+          'village': v,
+          'district': d,
+          'state': s,
+          'pincode': pincode ?? '501401',
+          'latitude': latitude ?? 17.6294,
+          'longitude': longitude ?? 78.4828,
+          'land_size_acres': landSizeAcres ?? 2.5,
         };
+        break;
 
       case UserRole.fpo:
         final opDistricts = operatingDistricts ??
             (location.isNotEmpty
                 ? location.split(',').map((s) => s.trim()).toList()
                 : ['Medchal', 'Hyderabad']);
-        return {
-          'full_name': businessName ?? name,
-          'fpo_profile': {
-            'registration_number': registrationId ?? 'FPO-TS-2024-991',
-            'operating_districts': opDistricts,
-            'cold_storage_capacity_mt': coldStorageCapacityMt ?? capacityTons ?? 50.0,
-            'hub_latitude': latitude ?? 17.6300,
-            'hub_longitude': longitude ?? 78.4850,
-          },
+        payload['fpo_profile'] = {
+          'registration_number': registrationId ?? 'FPO-TS-2024-991',
+          'operating_districts': opDistricts,
+          'cold_storage_capacity_mt': coldStorageCapacityMt ?? capacityTons ?? 50.0,
+          'hub_latitude': latitude ?? 17.6300,
+          'hub_longitude': longitude ?? 78.4850,
         };
+        break;
 
       case UserRole.bulkBuyer:
-        return {
-          'full_name': name,
-          'preferred_language': 'en',
-          'buyer_profile': {
-            'business_name': businessName ?? name,
-            'gstin': registrationId ?? '',
-            'monthly_volume_tons': monthlyVolumeTons ?? 10.0,
-            'delivery_location': location,
-          },
+        payload['buyer_profile'] = {
+          'business_name': businessName ?? name,
+          'gstin': registrationId ?? '',
+          'monthly_volume_tons': monthlyVolumeTons ?? 10.0,
+          'delivery_location': location,
         };
+        break;
 
       case UserRole.deliveryPartner:
-        return {
-          'full_name': name,
-          'driver_profile': {
-            'vehicle_type': vehicleType ?? 'EV Cargo Scooter',
-            'vehicle_number': vehicleNumber ?? 'TS 07 EA 4821',
-            'upi_id': upiId ?? '',
-            'is_available': true,
-          },
+        payload['driver_profile'] = {
+          'vehicle_type': vehicleType ?? 'EV Cargo Scooter',
+          'vehicle_number': vehicleNumber ?? 'TS 07 EA 4821',
+          'upi_id': upiId ?? '',
+          'is_available': true,
         };
+        break;
 
       case UserRole.consumer:
-        return {
-          'full_name': name,
-          'consumer_profile': {
-            'address': location,
-            'pincode': pincode ?? '500081',
-          },
+        payload['consumer_profile'] = {
+          'address': location,
+          'pincode': pincode ?? '500081',
         };
+        break;
     }
+
+    return payload;
   }
 
   static String _langCode(String? lang) {

@@ -22,9 +22,42 @@ class ProduceDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final item = produceItem ??
         appState.selectedProduceItem ??
-        (appState.produceList.isNotEmpty
-            ? appState.produceList.first
-            : ProduceItem.seedFarmerProduce.first);
+        (appState.produceList.isNotEmpty ? appState.produceList.first : null);
+
+    if (item == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(title: const Text('Produce Batch Details')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.textMuted),
+                const SizedBox(height: 16),
+                Text(
+                  'No Produce Batch Listed',
+                  style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'You do not have any produce batches listed yet. List your farm harvest to run AI quality grading and connect with bulk buyers.',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodySmall,
+                ),
+                const SizedBox(height: 24),
+                PrimaryButton(
+                  text: 'LIST NEW PRODUCE',
+                  icon: Icons.add_circle_outline_rounded,
+                  onPressed: () => Navigator.pushReplacementNamed(context, '/farmer/add-produce'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -67,6 +100,19 @@ class ProduceDetailsScreen extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
+                              if (item.assessmentId != null && item.assessmentId!.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  'AI Assessment: #${item.assessmentId}',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    fontSize: 11,
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ],
                           ),
                         ),

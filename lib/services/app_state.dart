@@ -824,9 +824,9 @@ class AppState extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------------
-  // Consumer: Products & Cart (kept local until consumer API endpoints)
+  // Consumer: Products & Cart (Live cloud database sync with local catalog fallback)
   // ---------------------------------------------------------------------------
-  final List<ConsumerProduct> _consumerProducts = const [
+  List<ConsumerProduct> _consumerProducts = [
     ConsumerProduct(
       id: 'cp_001',
       name: 'Fresh Farm Tomatoes',
@@ -1783,6 +1783,35 @@ class AppState extends ChangeNotifier {
       _cart.add(CartItem(product: product, quantityKg: qty));
     }
     notifyListeners();
+
+    // Live Cloud Cart Sync per Sprint Update (POST api/v1/consumer/cart/add)
+    ApiService.instance.addToConsumerCart(
+      productId: product.id,
+      quantityKg: qty,
+    );
+  }
+
+  /// Synchronize retail consumer product listings from live cloud database
+  /// per Sprint Update (GET api/v1/consumer/products)
+  Future<void> syncConsumerProductsFromBackend() async {
+    try {
+      final res = await ApiService.instance.getConsumerProducts();
+      final list = res is List
+          ? res
+          : (res is Map && res['products'] is List
+              ? res['products'] as List
+              : (res is Map && res['data'] is List ? res['data'] as List : []));
+      if (list.isNotEmpty) {
+        final remote = list
+            .map((e) => ConsumerProduct.fromJson(e as Map<String, dynamic>))
+            .toList();
+        _consumerProducts = remote;
+        notifyListeners();
+        debugPrint('[AppState] Synchronized ${remote.length} consumer products from live cloud.');
+      }
+    } catch (e) {
+      debugPrint('[AppState] syncConsumerProductsFromBackend note: $e');
+    }
   }
 
   void removeFromCart(String productId) {
@@ -1918,6 +1947,28 @@ class AppState extends ChangeNotifier {
       'weight': '3.0 kg',
     };
     _activeDeliveryTrips.insert(0, newTrip);
+
+    // Live Cloud Order Creation per Sprint Update (POST api/v1/consumer/orders/create)
+    // Backend locks the cart, generates a 6-digit Delivery OTP, and clears the cart
+    ApiService.instance.createConsumerOrder({
+      'orderId': orderId,
+      'order_id': orderId,
+      'deliveryAddress': finalAddress,
+      'buyerName': finalBuyer,
+      'paymentMethod': finalMethod,
+      'totalAmount': total,
+      'items': items,
+    }).then((res) {
+      if (res is Map<String, dynamic>) {
+        final liveOtp = (res['delivery_otp'] ?? res['deliveryOtp'] ?? res['otp'])?.toString();
+        if (liveOtp != null && liveOtp.isNotEmpty) {
+          debugPrint('[AppState] Live 6-digit Delivery OTP assigned: $liveOtp');
+          newTrip['otp'] = liveOtp;
+        }
+      }
+    }).catchError((e) {
+      debugPrint('[AppState] createConsumerOrder live sync note: $e');
+    });
 
     _cart.clear();
     notifyListeners();
@@ -2176,6 +2227,56 @@ class AppState extends ChangeNotifier {
   void toggleDriverOnline() {
     _isDriverOnline = !_isDriverOnline;
     notifyListeners();
+
+    // Live duty toggle sync per Sprint Update (POST api/v1/delivery/duty/toggle)
+    ApiService.instance.toggleDeliveryDuty(isOnline: _isDriverOnline);
+  }
+
+  /// Synchronize driver wallet and payout ledger balance from live cloud
+  /// per Sprint Update (GET api/v1/delivery/wallet)
+  Future<void> syncDeliveryWallet() async {
+    try {
+      final res = await ApiService.instance.getDeliveryWallet();
+      if (res is Map<String, dynamic>) {
+        final balance = (res['wallet_balance'] ??
+            res['balance'] ??
+            res['earnings_today'] ??
+            res['today_earnings']) as num?;
+        if (balance != null) {
+          _driverEarningsToday = balance.toDouble();
+          notifyListeners();
+          debugPrint('[AppState] Synced driver ledger balance from live cloud: ₹$_driverEarningsToday');
+        }
+      }
+    } catch (e) {
+      debugPrint('[AppState] syncDeliveryWallet note: $e');
+    }
+  }
+
+  /// Synchronize available dispatch delivery trips from live cloud
+  /// per Sprint Update (GET api/v1/delivery/trips/available)
+  Future<void> syncAvailableDeliveryTrips() async {
+    try {
+      final res = await ApiService.instance.getAvailableDeliveryTrips();
+      final list = res is List
+          ? res
+          : (res is Map && res['trips'] is List
+              ? res['trips'] as List
+              : (res is Map && res['data'] is List ? res['data'] as List : []));
+      if (list.isNotEmpty) {
+        for (final item in list) {
+          if (item is Map<String, dynamic>) {
+            final orderId = item['orderId'] ?? item['order_id'];
+            if (!_activeDeliveryTrips.any((t) => t['orderId'] == orderId)) {
+              _activeDeliveryTrips.add(Map<String, dynamic>.from(item));
+            }
+          }
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('[AppState] syncAvailableDeliveryTrips note: $e');
+    }
   }
 
   void completeDriverTrip(double payout, {String? orderId, Map<String, dynamic>? tripDetails}) {

@@ -230,7 +230,6 @@ class MatchedSupplyScreen extends StatelessWidget {
   void _showEscrowAdvanceSheet(BuildContext context, double totalAmt) {
     final advanceAmt = (totalAmt * 0.20).roundToDouble();
     final remainingAmt = (totalAmt * 0.80).roundToDouble();
-    bool isProcessing = false;
 
     showModalBottomSheet(
       context: context,
@@ -338,20 +337,12 @@ class MatchedSupplyScreen extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  if (isProcessing)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: CircularProgressIndicator(),
-                      ),
-                    )
-                  else
-                    PrimaryButton(
-                      text: 'LOCK ₹${advanceAmt.toInt()} IN ESCROW & DISPATCH',
-                      icon: Icons.lock_outline_rounded,
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        final orderId = 'AGR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+                  PrimaryButton(
+                    text: 'LOCK ₹${advanceAmt.toInt()} IN ESCROW & DISPATCH',
+                    icon: Icons.lock_outline_rounded,
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      final orderId = 'AGR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
 
                         RazorpayPaymentService.instance.openCheckout(
                           context: context,

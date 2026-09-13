@@ -14,17 +14,24 @@ class ProduceRepository {
     // 1. Try remote backend
     try {
       final data = await ApiService.instance.getMyProduce();
-      final list = data is List
-          ? data
-          : (data is Map && data['produce'] is List
-              ? data['produce'] as List
-              : (data is Map && data['data'] is List ? data['data'] as List : []));
-      if (list.isNotEmpty) {
-        final remoteItems = list
-            .map((e) => ProduceItem.fromJson(e as Map<String, dynamic>))
-            .toList();
-        await _saveToLocal(remoteItems);
-        return remoteItems;
+      if (data != null) {
+        final list = data is List
+            ? data
+            : (data is Map && data['produce'] is List
+                ? data['produce'] as List
+                : (data is Map && data['data'] is List
+                    ? data['data'] as List
+                    : (data is Map && data['items'] is List ? data['items'] as List : null)));
+        if (list != null) {
+          final remoteItems = list
+              .map((e) => ProduceItem.fromJson(e as Map<String, dynamic>))
+              .toList();
+          await _saveToLocal(remoteItems);
+          if (farmerId != null && farmerId.isNotEmpty) {
+            return remoteItems.where((p) => p.farmerId == farmerId || p.farmerId.isEmpty).toList();
+          }
+          return remoteItems;
+        }
       }
     } catch (e) {
       debugPrint('[ProduceRepository] getMyProduce remote error: $e');
@@ -72,20 +79,21 @@ class ProduceRepository {
       variety: item.variety,
       quantityKg: item.quantityKg,
       availableQuantityKg: item.availableQuantityKg,
-      grade: item.grade,
+      grade: createdItem.grade,
       availableDate: item.availableDate,
       location: item.location,
       pickupLatitude: item.pickupLatitude,
       pickupLongitude: item.pickupLongitude,
-      qualityScore: item.qualityScore,
-      confidenceScore: item.confidenceScore,
+      qualityScore: createdItem.qualityScore,
+      confidenceScore: createdItem.confidenceScore,
       observations: item.observations,
       riskLevel: item.riskLevel,
       photoCount: item.photoCount,
       photoPaths: item.photoPaths,
       imageUrl: item.imageUrl,
-      status: 'Listed',
+      status: createdItem.status.isNotEmpty ? createdItem.status : 'Listed',
       expectedPricePerKg: item.expectedPricePerKg,
+      assessmentId: createdItem.assessmentId ?? item.assessmentId,
     );
 
     // 3. Persist to on-device storage

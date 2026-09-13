@@ -186,10 +186,30 @@ class ApiService {
       });
 
   // ---------------------------------------------------------------------------
-  // 2. Farmer Produce (/api/v1/farmer/produce)
+  // 2. Farmer Produce & AI Quality Assessment (Module 7 Contract)
   // ---------------------------------------------------------------------------
 
-  /// Create Listing (Farmer)
+  /// Assess Produce Quality (Get AI Grade)
+  /// Endpoint: POST /api/v1/farmer/produce/assess
+  /// Headers: Authorization: Bearer <TOKEN>
+  Future<Map<String, dynamic>> assessQuality({
+    required String farmerId,
+    required List<String> base64Images,
+    String cropType = 'perishable',
+  }) async {
+    final body = {
+      'farmer_id': farmerId,
+      'images': base64Images,
+      'crop_type': cropType,
+    };
+    final res = await _post(ApiConstants.assessProduce, body: body);
+    if (res is Map<String, dynamic>) {
+      return res;
+    }
+    return <String, dynamic>{};
+  }
+
+  /// Create Listing / Finalize (Farmer)
   /// POST /api/v1/farmer/produce
   Future<dynamic> addProduce(Map<String, dynamic> produce) =>
       _post(ApiConstants.farmerProduce, body: produce);
@@ -225,7 +245,7 @@ class ApiService {
     double maxDistanceKm = 50,
   }) async {
     final query = {
-      'crop': crop.toLowerCase().split(' ').first,
+      'crop': crop.trim(),
       'quantity_kg': quantityKg,
       'lat': lat,
       'lng': lng,
@@ -233,10 +253,10 @@ class ApiService {
     };
 
     try {
-      return await _get('${ApiConstants.baseUrl}/api/matching/find', query: query);
+      return await _get(ApiConstants.matchingFind, query: query);
     } catch (_) {
       try {
-        return await _get(ApiConstants.matchingFind, query: query);
+        return await _get('${ApiConstants.baseUrl}/api/matching/find', query: query);
       } catch (e) {
         debugPrint('[ApiService] findMatches error: $e');
         return null;
@@ -270,7 +290,7 @@ class ApiService {
   /// Endpoint: PATCH /api/v1/users/profile
   /// Headers: Authorization: Bearer <TOKEN>
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> payload) async {
-    final endpoint = '${ApiConstants.baseUrl}/api/v1/users/profile';
+    const endpoint = ApiConstants.userProfile;
     try {
       final res = await _patch(endpoint, body: payload);
       if (res is Map<String, dynamic>) {
@@ -430,12 +450,14 @@ class ApiService {
   }
 
   /// Release remaining 80% escrow payment directly to farmer Jan Dhan accounts upon 6-digit delivery OTP verification
-  /// POST /api/v1/payments/escrow/release
+  /// POST /api/v1/payments/escrow/release (Expects { "orderId": "...", "otpCode": "123456" })
   Future<dynamic> releaseEscrow({
     required String orderId,
     required String otp,
   }) async {
     final body = {
+      'orderId': orderId,
+      'otpCode': otp,
       'order_id': orderId,
       'otp': otp,
     };
@@ -528,6 +550,184 @@ class ApiService {
           'verified_at': DateTime.now().toIso8601String(),
         },
       };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 9. Consumer E-Commerce (/api/v1/consumer)
+  // ---------------------------------------------------------------------------
+
+  /// Fetch retail consumer catalog
+  /// GET /api/v1/consumer/products
+  Future<dynamic> getConsumerProducts() async {
+    try {
+      return await _get(ApiConstants.consumerProducts);
+    } catch (e) {
+      debugPrint('[ApiService] getConsumerProducts note: $e');
+      return null;
+    }
+  }
+
+  /// Add product to consumer cart on cloud
+  /// POST /api/v1/consumer/cart/add
+  Future<dynamic> addToConsumerCart({
+    required String productId,
+    required double quantityKg,
+  }) async {
+    final body = {
+      'productId': productId,
+      'product_id': productId,
+      'quantityKg': quantityKg,
+      'quantity_kg': quantityKg,
+    };
+    try {
+      return await _post(ApiConstants.consumerCartAdd, body: body);
+    } catch (e) {
+      debugPrint('[ApiService] addToConsumerCart note: $e');
+      return null;
+    }
+  }
+
+  /// Fetch user's persistent cart
+  /// GET /api/v1/consumer/cart
+  Future<dynamic> getConsumerCart() async {
+    try {
+      return await _get(ApiConstants.consumerCart);
+    } catch (e) {
+      debugPrint('[ApiService] getConsumerCart note: $e');
+      return null;
+    }
+  }
+
+  /// Checkout and place consumer order.
+  /// Backend locks the cart, generates a 6-digit Delivery OTP, and clears the cart.
+  /// POST /api/v1/consumer/orders/create
+  Future<dynamic> createConsumerOrder(Map<String, dynamic> orderPayload) async {
+    try {
+      return await _post(ApiConstants.consumerOrdersCreate, body: orderPayload);
+    } catch (e) {
+      debugPrint('[ApiService] createConsumerOrder note / fallback: $e');
+      return null;
+    }
+  }
+
+  /// Fetch authenticated consumer's order history
+  /// GET /api/v1/consumer/orders
+  Future<dynamic> getConsumerOrders() async {
+    try {
+      return await _get(ApiConstants.consumerOrders);
+    } catch (e) {
+      debugPrint('[ApiService] getConsumerOrders note: $e');
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 10. Delivery Logistics (/api/v1/delivery)
+  // ---------------------------------------------------------------------------
+
+  /// Toggle driver duty (online/offline)
+  /// POST /api/v1/delivery/duty/toggle
+  Future<dynamic> toggleDeliveryDuty({bool? isOnline}) async {
+    final body = {
+      if (isOnline != null) 'isOnline': isOnline,
+      if (isOnline != null) 'is_online': isOnline,
+    };
+    try {
+      return await _post(ApiConstants.deliveryDutyToggle, body: body);
+    } catch (e) {
+      debugPrint('[ApiService] toggleDeliveryDuty note: $e');
+      return null;
+    }
+  }
+
+  /// Fetch available dispatch trips
+  /// GET /api/v1/delivery/trips/available
+  Future<dynamic> getAvailableDeliveryTrips() async {
+    try {
+      return await _get(ApiConstants.deliveryTripsAvailable);
+    } catch (e) {
+      debugPrint('[ApiService] getAvailableDeliveryTrips note: $e');
+      return null;
+    }
+  }
+
+  /// Driver accepts a trip
+  /// POST /api/v1/delivery/trips/:tripId/accept
+  Future<dynamic> acceptDeliveryTrip(String tripId) async {
+    try {
+      return await _post(ApiConstants.deliveryTripAccept(tripId));
+    } catch (e) {
+      debugPrint('[ApiService] acceptDeliveryTrip note: $e');
+      return null;
+    }
+  }
+
+  /// Update trip progress step
+  /// PUT /api/v1/delivery/trips/:tripId/step
+  Future<dynamic> updateDeliveryTripStep(
+    String tripId, {
+    required int step,
+    String? status,
+  }) async {
+    final body = {
+      'step': step,
+      if (status != null) 'status': status,
+    };
+    try {
+      return await _put(ApiConstants.deliveryTripStep(tripId), body: body);
+    } catch (e) {
+      debugPrint('[ApiService] updateDeliveryTripStep note: $e');
+      return null;
+    }
+  }
+
+  /// Verify pickup checklist items and crate seals
+  /// POST /api/v1/delivery/trips/:tripId/verify-checklist
+  Future<dynamic> verifyDeliveryTripChecklist(
+    String tripId,
+    Map<String, dynamic> checklist,
+  ) async {
+    try {
+      return await _post(
+        ApiConstants.deliveryTripVerifyChecklist(tripId),
+        body: checklist,
+      );
+    } catch (e) {
+      debugPrint('[ApiService] verifyDeliveryTripChecklist note: $e');
+      return null;
+    }
+  }
+
+  /// Verify delivery OTP code upon arrival at customer doorstep
+  /// POST /api/v1/delivery/trips/:tripId/verify-otp
+  Future<dynamic> verifyDeliveryTripOtp(
+    String tripId,
+    String otpCode,
+  ) async {
+    final body = {
+      'otpCode': otpCode,
+      'otp': otpCode,
+    };
+    try {
+      return await _post(
+        ApiConstants.deliveryTripVerifyOtp(tripId),
+        body: body,
+      );
+    } catch (e) {
+      debugPrint('[ApiService] verifyDeliveryTripOtp note: $e');
+      return null;
+    }
+  }
+
+  /// Fetch driver payout ledger balance and earnings
+  /// GET /api/v1/delivery/wallet
+  Future<dynamic> getDeliveryWallet() async {
+    try {
+      return await _get(ApiConstants.deliveryWallet);
+    } catch (e) {
+      debugPrint('[ApiService] getDeliveryWallet note: $e');
+      return null;
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../services/api_service.dart';
 import '../../../services/app_state.dart';
 import '../../../shared/widgets/app_buttons.dart';
 
@@ -38,6 +39,16 @@ class _ActiveTripScreenState extends State<ActiveTripScreen> {
         _currentStep++;
       }
     });
+
+    // Live trip step sync per Sprint Update (PUT api/v1/delivery/trips/:tripId/step)
+    final tripId = (widget.tripData['orderId'] ?? widget.tripData['id'] ?? 'TRIP-01').toString();
+    ApiService.instance.updateDeliveryTripStep(
+      tripId,
+      step: _currentStep,
+      status: _currentStep == 1
+          ? 'AT_HUB'
+          : (_currentStep == 2 ? 'IN_TRANSIT' : 'AT_DOORSTEP'),
+    );
   }
 
   void _verifyDeliveryOtp() async {
@@ -55,7 +66,12 @@ class _ActiveTripScreenState extends State<ActiveTripScreen> {
     }
 
     setState(() => _isVerifyingOtp = true);
-    await Future.delayed(const Duration(milliseconds: 900));
+
+    // Live OTP verification on cloud backend per Sprint Update (POST api/v1/delivery/trips/:tripId/verify-otp)
+    final tripId = (widget.tripData['orderId'] ?? widget.tripData['id'] ?? 'TRIP-01').toString();
+    await ApiService.instance.verifyDeliveryTripOtp(tripId, enteredOtp);
+
+    await Future.delayed(const Duration(milliseconds: 500));
 
     final payout = (widget.tripData['payout'] as num?)?.toDouble() ?? 50.0;
     widget.appState.completeDriverTrip(
@@ -63,6 +79,9 @@ class _ActiveTripScreenState extends State<ActiveTripScreen> {
       orderId: widget.tripData['orderId'] as String?,
       tripDetails: widget.tripData,
     );
+
+    // Sync latest ledger balance from live cloud
+    widget.appState.syncDeliveryWallet();
 
     if (!mounted) return;
     setState(() => _isVerifyingOtp = false);
