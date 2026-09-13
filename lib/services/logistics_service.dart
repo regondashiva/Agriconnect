@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/logistics_route_model.dart';
+import 'api_service.dart';
 
 class LogisticsService {
   // Centralized Demo Coordinates (Ranga Reddy rural cluster -> Hyderabad Mandi)
@@ -39,6 +41,126 @@ class LogisticsService {
     const LatLng(17.4483, 78.3915), // Consumer Home (Madhapur)
   ];
 
+  /// Standard Google/OSRM Polyline Algorithm Decoder
+  static List<LatLng> decodePolyline(String encoded) {
+    final List<LatLng> points = [];
+    int index = 0, len = encoded.length;
+    int lat = 0, lng = 0;
+
+    while (index < len) {
+      int b, shift = 0, result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+
+      points.add(LatLng(lat / 1E5, lng / 1E5));
+    }
+    return points;
+  }
+
+  /// Request dynamic route optimization from backend OSRM microservice
+  static Future<SmartRouteData> getOptimizedRoute({
+    LatLng? start,
+    LatLng? end,
+  }) async {
+    final startPt = start ?? farmALocation;
+    final endPt = end ?? buyerHubLocation;
+
+    try {
+      final res = await ApiService.instance.optimizeRoute(
+        startCoords: '${startPt.latitude},${startPt.longitude}',
+        endCoords: '${endPt.latitude},${endPt.longitude}',
+      );
+
+      if (res != null && res is Map) {
+        final route = res['route'];
+        if (route is Map) {
+          final geometry = route['geometry'];
+          List<LatLng> decodedPoints = [];
+          if (geometry is String && geometry.isNotEmpty) {
+            decodedPoints = decodePolyline(geometry);
+          } else if (geometry is List) {
+            decodedPoints = geometry.map((p) {
+              if (p is List && p.length >= 2) {
+                return LatLng((p[1] as num).toDouble(), (p[0] as num).toDouble());
+              }
+              return null;
+            }).whereType<LatLng>().toList();
+          }
+
+          final distanceMeters = (route['distance'] as num?)?.toDouble() ?? 68000.0;
+          final durationSecs = (route['duration'] as num?)?.toInt() ?? 15600;
+          final durationHours = durationSecs ~/ 3600;
+          final durationMins = (durationSecs % 3600) ~/ 60;
+
+          return SmartRouteData(
+            routeId: res['route_id']?.toString() ?? 'ROUTE-SR-7A',
+            routeName: 'Route 7A - Farm Deliveries (Optimized)',
+            totalDistanceKm: (distanceMeters / 1000.0).roundToDouble(),
+            totalCapacityKg: 1000.0,
+            estimatedDuration: '${durationHours}h ${durationMins}m',
+            status: RouteStatus.optimized,
+            currentVehiclePosition: vehicleLiveLocation,
+            polylinePoints: decodedPoints.isNotEmpty ? decodedPoints : smartRoutePolyline,
+            stops: [
+              RouteStopPoint(
+                id: 'stop_1',
+                label: 'Farm A',
+                personName: 'Cluster Farmer A',
+                crop: 'Wheat / Tomato',
+                quantityKg: 300.0,
+                scheduledTime: '10:00 AM',
+                location: startPt,
+                type: StopType.farmPickup,
+                isCompleted: false,
+              ),
+              const RouteStopPoint(
+                id: 'stop_2',
+                label: 'Farm B',
+                personName: 'Cluster Farmer B',
+                crop: 'Wheat / Tomato',
+                quantityKg: 700.0,
+                scheduledTime: '11:30 AM',
+                location: farmBLocation,
+                type: StopType.farmPickup,
+                isCompleted: false,
+              ),
+              RouteStopPoint(
+                id: 'stop_3',
+                label: 'Urban Buyer Hub',
+                personName: 'Vikram Mehta',
+                crop: 'Produce Lot',
+                quantityKg: 1000.0,
+                scheduledTime: '2:20 PM',
+                location: endPt,
+                type: StopType.buyerDropoff,
+                isCompleted: false,
+              ),
+            ],
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[LogisticsService] getOptimizedRoute error / fallback: $e');
+    }
+
+    return getDemoSmartRoute();
+  }
+
   /// Standard SIH Smart Route Dataset
   static SmartRouteData getDemoSmartRoute() {
     return SmartRouteData(
@@ -48,13 +170,13 @@ class LogisticsService {
       totalCapacityKg: 1000.0,
       estimatedDuration: '4h 20m',
       status: RouteStatus.optimized,
-      currentVehiclePosition: const LatLng(17.3060, 78.1360),
+      currentVehiclePosition: vehicleLiveLocation,
       polylinePoints: smartRoutePolyline,
-      stops: [
+      stops: const [
         RouteStopPoint(
           id: 'stop_1',
           label: 'Farm A',
-          personName: 'Ramesh',
+          personName: 'Cluster Farmer A',
           crop: 'Wheat',
           quantityKg: 300.0,
           scheduledTime: '10:00 AM',
@@ -65,7 +187,7 @@ class LogisticsService {
         RouteStopPoint(
           id: 'stop_2',
           label: 'Farm B',
-          personName: 'Suresh',
+          personName: 'Cluster Farmer B',
           crop: 'Wheat',
           quantityKg: 700.0,
           scheduledTime: '11:30 AM',
@@ -76,7 +198,7 @@ class LogisticsService {
         RouteStopPoint(
           id: 'stop_3',
           label: 'Urban Buyer Hub',
-          personName: '',
+          personName: 'Vikram Mehta',
           crop: 'Wheat',
           quantityKg: 1000.0,
           scheduledTime: '2:20 PM',

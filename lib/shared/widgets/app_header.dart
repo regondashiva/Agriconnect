@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../models/user_model.dart';
 import '../../services/app_state.dart';
 import 'role_switcher_sheet.dart';
 
@@ -10,6 +11,7 @@ class AppHeader extends StatelessWidget {
   final String? subtitle;
   final String? location;
   final bool showNotification;
+  final bool showRoleSwitcher;
 
   const AppHeader({
     super.key,
@@ -18,6 +20,7 @@ class AppHeader extends StatelessWidget {
     this.subtitle,
     this.location,
     this.showNotification = true,
+    this.showRoleSwitcher = false,
   });
 
   @override
@@ -93,50 +96,68 @@ class AppHeader extends StatelessWidget {
 
           const SizedBox(width: 8),
 
-          // Role Badge (Tappable for Quick Role Switch in SIH Demo)
-          InkWell(
-            onTap: () => RoleSwitcherSheet.show(context, appState),
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.primaryLight),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: AppColors.secondary,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 80),
-                    child: Text(
-                      appState.currentUser.roleDisplayName,
-                      style: AppTypography.labelSmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
+          // Role Badge (Optional, hidden by default)
+          if (showRoleSwitcher) ...[
+            InkWell(
+              onTap: () => RoleSwitcherSheet.show(context, appState),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.primaryLight),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: AppColors.secondary,
+                        shape: BoxShape.circle,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(width: 2),
-                  const Icon(Icons.arrow_drop_down, size: 14, color: AppColors.primary),
-                ],
+                    const SizedBox(width: 4),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 80),
+                      child: Text(
+                        appState.currentUser.roleDisplayName,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(Icons.arrow_drop_down, size: 14, color: AppColors.primary),
+                  ],
+                ),
               ),
             ),
-          ),
+            const SizedBox(width: 4),
+          ],
 
-          const SizedBox(width: 4),
+          // Consumer Cart Icon
+          if (appState.currentUser.role == UserRole.consumer)
+            IconButton(
+              padding: const EdgeInsets.all(6),
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                Navigator.pushNamed(context, '/consumer/cart');
+              },
+              icon: Badge(
+                isLabelVisible: appState.cartCount > 0,
+                label: Text('${appState.cartCount}', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
+                backgroundColor: const Color(0xFFD97706),
+                child: const Icon(Icons.shopping_cart_outlined, color: AppColors.textNavy, size: 22),
+              ),
+              tooltip: 'Cart',
+            ),
 
           // Notification Bell
           if (showNotification)

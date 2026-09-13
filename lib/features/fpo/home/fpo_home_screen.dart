@@ -147,7 +147,7 @@ class _FpoHomeScreenState extends State<FpoHomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('500 kg Tomato Lot (Grade A)', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          Text('Aggregated from Ramesh (100kg), Suresh (150kg), Ravi (250kg)', style: AppTypography.bodySmall.copyWith(fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text('Aggregated from 3 verified cluster farmers (100kg + 150kg + 250kg)', style: AppTypography.bodySmall.copyWith(fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                       ),
                     ),

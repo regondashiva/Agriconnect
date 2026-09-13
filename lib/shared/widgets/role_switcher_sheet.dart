@@ -97,6 +97,13 @@ class RoleSwitcherSheet extends StatelessWidget {
                 desc: 'Buy 2kg tomatoes + 1kg potatoes directly from FPO, instant tracking',
                 icon: Icons.shopping_bag_outlined,
               ),
+              _buildRoleOption(
+                context,
+                role: UserRole.deliveryPartner,
+                title: 'Delivery Partner (Mahesh Goud)',
+                desc: 'Accept trips, pickup packed vegetable crates from Hub & deliver to households',
+                icon: Icons.two_wheeler_rounded,
+              ),
               const SizedBox(height: 8),
             ],
           ),
@@ -132,6 +139,9 @@ class RoleSwitcherSheet extends StatelessWidget {
               break;
             case UserRole.consumer:
               Navigator.pushNamedAndRemoveUntil(context, '/consumer/home', (r) => false);
+              break;
+            case UserRole.deliveryPartner:
+              Navigator.pushNamedAndRemoveUntil(context, '/delivery/home', (r) => false);
               break;
           }
         },

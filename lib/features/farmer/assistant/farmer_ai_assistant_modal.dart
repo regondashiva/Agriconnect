@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../services/app_state.dart';
+import '../../../services/voice_service.dart';
 
 class FarmerAiAssistantModal extends StatefulWidget {
   final AppState appState;
@@ -29,9 +31,11 @@ class _FarmerAiAssistantModalState extends State<FarmerAiAssistantModal>
   String? _aiResponseText;
   String? _suggestedActionRoute;
   String? _suggestedActionLabel;
+  FarmerVoiceIntent? _lastIntent;
 
   late AnimationController _pulseController;
   Timer? _listeningTimer;
+  final TextEditingController _textQueryController = TextEditingController();
 
   @override
   void initState() {
@@ -48,68 +52,128 @@ class _FarmerAiAssistantModalState extends State<FarmerAiAssistantModal>
   void dispose() {
     _pulseController.dispose();
     _listeningTimer?.cancel();
+    _textQueryController.dispose();
     super.dispose();
   }
 
-  void _handleSimulatedVoiceTap(String query, String response, {String? route, String? actionLabel}) {
+  Future<void> _executeFarmerVoiceQuery(String query, {String? audioPath}) async {
     setState(() {
-      _isListening = true;
-      _isProcessing = false;
+      _isListening = false;
+      _isProcessing = true;
       _lastSpokenQuery = query;
       _aiResponseText = null;
       _suggestedActionRoute = null;
       _suggestedActionLabel = null;
+      _lastIntent = null;
     });
 
-    _listeningTimer?.cancel();
-    _listeningTimer = Timer(const Duration(milliseconds: 1400), () {
+    try {
+      final result = await VoiceService.instance.processFarmerVoiceCommand(
+        spokenText: query,
+        language: _selectedLang,
+        appState: widget.appState,
+        audioFilePath: audioPath,
+      );
+
       if (!mounted) return;
       setState(() {
-        _isListening = false;
-        _isProcessing = true;
+        _isProcessing = false;
+        _aiResponseText = result.responseText;
+        _suggestedActionRoute = result.suggestedRoute;
+        _suggestedActionLabel = result.actionLabel;
+        _lastIntent = result.intent;
       });
-
-      _listeningTimer = Timer(const Duration(milliseconds: 900), () {
-        if (!mounted) return;
-        setState(() {
-          _isProcessing = false;
-          _aiResponseText = response;
-          _suggestedActionRoute = route;
-          _suggestedActionLabel = actionLabel;
-        });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isProcessing = false;
+        _aiResponseText = 'నమస్కారం! మీ మాట అందింది. దయచేసి మళ్లీ ప్రయత్నించండి.';
       });
-    });
+    }
   }
 
-  void _startLiveMic() {
-    final defaultQueries = {
-      'Telugu': {
-        'query': 'నా టొమాటోకి మంచి ధర ఎక్కడ ఉంది?',
-        'response': 'మీ టొమాటోలకు ఫ్రెష్‌బాస్కెట్ మండి వద్ద కిలో ₹20 ధరతో 500 కిలోల బల్క్ డిమాండ్ ఉంది! మీ 100 కిలోల పంటకు ₹2,000 తక్షణ చెల్లింపు లభిస్తుంది.',
-        'route': '/farmer/matches',
-        'label': 'బయ్యర్ అవకాశాలను చూడండి (View Matches)',
-      },
-      'Hindi': {
-        'query': 'मेरे टमाटर का अच्छा दाम कहाँ मिलेगा?',
-        'response': 'आपके टमाटर के लिए फ्रेशबास्केट मंडी में ₹20/किलो पर 500 किलो की मांग है। आपके 100 किलो के लिए ₹2,000 का भुगतान तुरंत मिलेगा।',
-        'route': '/farmer/matches',
-        'label': 'खरीदार के सौदे देखें (View Matches)',
-      },
-      'English': {
-        'query': 'Where can I get the best price for my tomatoes?',
-        'response': 'FreshBasket Mandi has a 500 kg bulk demand at ₹20/kg! You have a 92% match score with estimated ₹2,000 payout.',
-        'route': '/farmer/matches',
-        'label': 'View Buyer Opportunities',
-      },
-    };
+  void _handleSimulatedVoiceTap(String query, String response, {String? route, String? actionLabel}) {
+    _executeFarmerVoiceQuery(query);
+  }
 
-    final current = defaultQueries[_selectedLang] ?? defaultQueries['English']!;
-    _handleSimulatedVoiceTap(
-      current['query']!,
-      current['response']!,
-      route: current['route'],
-      actionLabel: current['label'],
-    );
+  Future<void> _startRecordingAndListening() async {
+    setState(() {
+      _isListening = true;
+      _isProcessing = false;
+      _lastSpokenQuery = _selectedLang == 'Telugu'
+          ? 'మీ మాట వింటున్నాను... మాట్లాడండి (రైతు వాయిస్ రికార్డ్ అవుతోంది)'
+          : (_selectedLang == 'Hindi' ? 'सुन रहा हूँ... बोलिए (आवाज़ रिकॉर्ड हो रही है)' : 'Listening & Recording voice... speak now');
+    });
+
+    try {
+      // Start audio recording file simultaneously for Edge AI Vosk 16kHz WAV streaming
+      await VoiceService.instance.startAudioRecording();
+
+      final hasSpeech = await VoiceService.instance.initSpeech();
+      bool speechDetected = false;
+
+      if (hasSpeech) {
+        await VoiceService.instance.startListening(
+          language: _selectedLang,
+          onResult: (words) async {
+            speechDetected = true;
+            _listeningTimer?.cancel();
+            await VoiceService.instance.stopListening();
+            final audioPath = await VoiceService.instance.stopAudioRecording();
+            _executeFarmerVoiceQuery(words, audioPath: audioPath);
+          },
+        );
+
+        _listeningTimer?.cancel();
+        _listeningTimer = Timer(const Duration(seconds: 7), () async {
+          if (!speechDetected && mounted && _isListening) {
+            await VoiceService.instance.stopListening();
+            final audioPath = await VoiceService.instance.stopAudioRecording();
+            if (audioPath != null && File(audioPath).existsSync() && File(audioPath).lengthSync() > 1000) {
+              _executeFarmerVoiceQuery('Voice query', audioPath: audioPath);
+            } else {
+              setState(() {
+                _isListening = false;
+                _isProcessing = false;
+                _aiResponseText = _selectedLang == 'Telugu'
+                    ? 'మాట గుర్తించలేకపోయాము. దయచేసి మైక్ నొక్కి మళ్లీ స్పష్టంగా మాట్లాడండి.'
+                    : (_selectedLang == 'Hindi'
+                        ? 'आवाज़ पहचान में नहीं आई। कृपया माइक दबाकर फिर से बोलें।'
+                        : 'No speech detected. Please press the mic and speak your intent clearly.');
+              });
+            }
+          }
+        });
+      } else {
+        // Fallback to pure audio recorder if device STT engine is not installed
+        _listeningTimer?.cancel();
+        _listeningTimer = Timer(const Duration(seconds: 5), () async {
+          final audioPath = await VoiceService.instance.stopAudioRecording();
+          if (audioPath != null) {
+            _executeFarmerVoiceQuery('Farmer voice request', audioPath: audioPath);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Voice listen error: $e');
+      setState(() {
+        _isListening = false;
+        _isProcessing = false;
+      });
+    }
+  }
+
+  Future<void> _stopAndSubmitRecording() async {
+    if (!_isListening) return;
+    _listeningTimer?.cancel();
+    await VoiceService.instance.stopListening();
+    final audioPath = await VoiceService.instance.stopAudioRecording();
+    if (audioPath != null) {
+      _executeFarmerVoiceQuery(
+        _lastSpokenQuery ?? 'Voice command',
+        audioPath: audioPath,
+      );
+    }
   }
 
   @override
@@ -213,7 +277,17 @@ class _FarmerAiAssistantModalState extends State<FarmerAiAssistantModal>
                 // Main Interactive Voice Agent Box (Large accessible button)
                 _buildVoiceAgentCard(),
 
-                const SizedBox(height: 18),
+                const SizedBox(height: 12),
+
+                // Spoken Prompts Chips (Instant tap-to-ask in Telugu/Hindi/English)
+                _buildSuggestedVoicePrompts(),
+
+                const SizedBox(height: 14),
+
+                // Custom Spoken / Typed Query Input
+                _buildQueryInputField(),
+
+                const SizedBox(height: 16),
 
                 // AI Response / Live Output Box (if present)
                 if (_lastSpokenQuery != null || _isListening || _isProcessing) ...[
@@ -310,22 +384,30 @@ class _FarmerAiAssistantModalState extends State<FarmerAiAssistantModal>
       ),
       child: Column(
         children: [
-          // Animated Microphone Button
+          // Animated Microphone Button with Push-to-Talk & Tap-to-Speak
           GestureDetector(
-            onTap: _startLiveMic,
+            onTap: () {
+              if (_isListening) {
+                _stopAndSubmitRecording();
+              } else {
+                _startRecordingAndListening();
+              }
+            },
+            onLongPressStart: (_) => _startRecordingAndListening(),
+            onLongPressEnd: (_) => _stopAndSubmitRecording(),
             child: ScaleTransition(
               scale: _isListening ? _pulseController : const AlwaysStoppedAnimation(1.0),
               child: Container(
-                width: 72,
-                height: 72,
+                width: 76,
+                height: 76,
                 decoration: BoxDecoration(
                   color: _isListening ? const Color(0xFFDC2626) : const Color(0xFF15803D),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
                       color: (_isListening ? const Color(0xFFDC2626) : const Color(0xFF15803D)).withValues(alpha: 0.35),
-                      blurRadius: 16,
-                      spreadRadius: _isListening ? 4 : 1,
+                      blurRadius: 18,
+                      spreadRadius: _isListening ? 6 : 1,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -345,12 +427,12 @@ class _FarmerAiAssistantModalState extends State<FarmerAiAssistantModal>
 
           Text(
             _isListening
-                ? 'Listening to you... (వింటున్నాను...)'
+                ? 'Listening & Recording... Release to Send (వింటున్నాను...)'
                 : (_isProcessing
-                    ? 'Understanding your request... (విశ్లేషిస్తున్నాను...)'
-                    : 'TAP TO SPEAK (మాట్లాడటానికి నొక్కండి)'),
+                    ? 'AI is Thinking & Generating Audio Response...'
+                    : 'HOLD OR TAP TO SPEAK (నొక్కి మాట్లాడండి)'),
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13.5,
               fontWeight: FontWeight.w800,
               color: _isListening ? const Color(0xFFDC2626) : const Color(0xFF15803D),
             ),
@@ -463,6 +545,69 @@ class _FarmerAiAssistantModalState extends State<FarmerAiAssistantModal>
               ],
             ),
 
+            const SizedBox(height: 8),
+
+            // Replay Voice Audio Button
+            InkWell(
+              onTap: () {
+                VoiceService.instance.replayLastVoice();
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF86EFAC)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.volume_up_rounded, size: 15, color: Color(0xFF15803D)),
+                    const SizedBox(width: 6),
+                    Text(
+                      _selectedLang == 'Telugu'
+                          ? 'వాయిస్ వినండి (Replay Voice)'
+                          : (_selectedLang == 'Hindi' ? 'आवाज़ सुनें (Replay Voice)' : 'Hear AI Voice Aloud'),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF15803D),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            if (_lastIntent == FarmerVoiceIntent.sellProduce) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF15803D).withValues(alpha: 0.3)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.check_circle_rounded, color: Color(0xFF15803D), size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Autonomous Execution: Produce registered to your inventory & active for buyer matching!',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF14532D),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             if (_suggestedActionRoute != null) ...[
               const SizedBox(height: 10),
               SizedBox(
@@ -484,6 +629,123 @@ class _FarmerAiAssistantModalState extends State<FarmerAiAssistantModal>
               ),
             ],
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestedVoicePrompts() {
+    final prompts = {
+      'Telugu': [
+        '🍅 100 kg టమోటా అమ్మాలి',
+        '🧅 ఉల్లిపాయలు ఎవరు కొంటున్నారు?',
+        '📈 నేటి మార్కెట్ ధర ఎంత?',
+        '🚚 పిక్‌అప్ ట్రాకింగ్ వివరాలు',
+      ],
+      'Hindi': [
+        '🍅 मुझे 100 किलो टमाटर बेचना है',
+        '🧅 प्याज कौन खरीद रहा है?',
+        '📈 आज का मंडी भाव क्या है?',
+        '🚚 पिकअप वाहन की स्थिति',
+      ],
+      'English': [
+        '🍅 Sell 100 kg of Tomato',
+        '🧅 Who is buying onions?',
+        '📈 Today market price trend',
+        '🚚 Track harvest pickup',
+      ],
+    };
+
+    final list = prompts[_selectedLang] ?? prompts['English']!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.record_voice_over_rounded, size: 14, color: Color(0xFF15803D)),
+            const SizedBox(width: 6),
+            Text(
+              _selectedLang == 'Telugu'
+                  ? 'మాట్లాడటానికి ఉదాహరణలు (Tap to ask):'
+                  : (_selectedLang == 'Hindi' ? 'बोलने के उदाहरण (Tap to ask):' : 'Try Speaking (Tap to ask):'),
+              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF4B5563)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: list.map((p) {
+            return InkWell(
+              onTap: () => _executeFarmerVoiceQuery(p),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Text(
+                  p,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQueryInputField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 10),
+          const Icon(Icons.chat_bubble_outline_rounded, size: 18, color: Color(0xFF6B7280)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _textQueryController,
+              decoration: InputDecoration(
+                hintText: _selectedLang == 'Telugu'
+                    ? 'లేదా మీ ప్రశ్నను ఇక్కడ రాయండి…'
+                    : (_selectedLang == 'Hindi' ? 'या अपना सवाल यहाँ लिखें…' : 'Or type your request here…'),
+                hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              onSubmitted: (val) {
+                if (val.trim().isNotEmpty) {
+                  final text = val.trim();
+                  _textQueryController.clear();
+                  _executeFarmerVoiceQuery(text);
+                }
+              },
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.send_rounded, size: 18, color: Color(0xFF15803D)),
+            onPressed: () {
+              final text = _textQueryController.text.trim();
+              if (text.isNotEmpty) {
+                _textQueryController.clear();
+                _executeFarmerVoiceQuery(text);
+              }
+            },
+          ),
         ],
       ),
     );
@@ -552,12 +814,7 @@ class _FarmerAiAssistantModalState extends State<FarmerAiAssistantModal>
                 subtitle: 'పిక్‌అప్ ట్రాకింగ్',
                 color: const Color(0xFF7C3AED),
                 onTap: () {
-                  _handleSimulatedVoiceTap(
-                    'నా ఆర్డర్ పిక్‌అప్ ఎప్పుడు వస్తుంది? (Pickup Status)',
-                    'రవాణా వాహనం (MH-12-8802) మీ క్లస్టర్ వైపు వస్తోంది. అంచనా సమయం: ఉదయం 10:30 గంటలకు.',
-                    route: '/coordination/tracking',
-                    actionLabel: 'లైవ్ మ్యాప్ ట్రాక్ చేయండి (Track Route)',
-                  );
+                  _executeFarmerVoiceQuery('నా ఆర్డర్ పిక్‌అప్ ఎప్పుడు వస్తుంది? (Pickup Status)');
                 },
               ),
             ),
@@ -573,12 +830,7 @@ class _FarmerAiAssistantModalState extends State<FarmerAiAssistantModal>
                 subtitle: 'బ్యాంక్ చెల్లింపు',
                 color: const Color(0xFF0D9488),
                 onTap: () {
-                  _handleSimulatedVoiceTap(
-                    'నా పేమెంట్ ఎప్పుడు వస్తుంది? (Payment Status)',
-                    'ఆర్డర్ #AGR-1024 కి సంబంధించిన ₹2,000 మండి గేట్ వద్ద నాణ్యత తనిఖీ పూర్తవగానే మీ జన్ ధన్ బ్యాంక్ ఖాతాలో జమ అవుతుంది.',
-                    route: '/coordination/settlement',
-                    actionLabel: 'సెటిల్మెంట్ వివరాలు (View Settlement)',
-                  );
+                  _executeFarmerVoiceQuery('నా పేమెంట్ ఎప్పుడు వస్తుంది? (Payment Status)');
                 },
               ),
             ),

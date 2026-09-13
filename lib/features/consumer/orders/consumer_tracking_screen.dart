@@ -87,17 +87,99 @@ class ConsumerTrackingScreen extends StatelessWidget {
                 ),
               ),
 
+              const SizedBox(height: 12),
+
+              // Destination Delivery Address & Payment Verified Card
+              AppCard(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.location_on, color: AppColors.primary, size: 20),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Delivery to: ${order.buyerName}',
+                                style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                order.deliveryAddress,
+                                style: AppTypography.bodySmall.copyWith(color: AppColors.textDark),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFBBF7D0)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${order.paymentMethod} • ₹${order.totalAmount.toInt()} PAID',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF166534),
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '0% Middleman Cut',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 14),
 
-              // Interactive Delivery Map Card
+              // Interactive Delivery Map Card (OpenStreetMap & Satellite)
               Container(
-                height: 200,
+                height: 260,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.surfaceContainerHigh),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x0A000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(17),
                   child: InteractiveMapWidget(
                     stops: [
                       RouteStopPoint(
@@ -126,9 +208,9 @@ class ConsumerTrackingScreen extends StatelessWidget {
                     polylinePoints: LogisticsService.consumerOrderPolyline,
                     liveVehicleLocation: LogisticsService.vehicleLiveLocation,
                     initialCenter: const LatLng(17.3850, 78.3100),
-                    initialZoom: 10.5,
+                    initialZoom: 10.6,
                     isDashedPolyline: false,
-                    showControls: false,
+                    showControls: true,
                   ),
                 ),
               ),
@@ -164,6 +246,51 @@ class ConsumerTrackingScreen extends StatelessWidget {
                         );
                       },
                     ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // Items in this Delivery Card
+              AppCard(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Items in this Delivery',
+                          style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${order.itemsSummary.length} Products',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ...order.itemsSummary.map((it) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle_outline_rounded, size: 15, color: Color(0xFF16A34A)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(it, style: AppTypography.bodySmall.copyWith(color: AppColors.textNavy)),
+                              ),
+                            ],
+                          ),
+                        )),
                   ],
                 ),
               ),

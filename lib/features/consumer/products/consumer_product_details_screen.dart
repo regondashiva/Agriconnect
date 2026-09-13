@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/consumer_product_model.dart';
 import '../../../services/app_state.dart';
@@ -49,11 +48,11 @@ class _ConsumerProductDetailsScreenState
               // Hero Product Card
               Center(
                 child: Container(
-                  width: 130,
-                  height: 130,
+                  width: 160,
+                  height: 160,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
                     boxShadow: const [
                       BoxShadow(
@@ -63,11 +62,37 @@ class _ConsumerProductDetailsScreenState
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: Text(
-                      widget.product.iconEmoji,
-                      style: const TextStyle(fontSize: 64),
-                    ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: (widget.product.imageUrl != null && widget.product.imageUrl!.isNotEmpty)
+                        ? Image.network(
+                            widget.product.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Center(
+                              child: Text(
+                                widget.product.iconEmoji,
+                                style: const TextStyle(fontSize: 64),
+                              ),
+                            ),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: const Color(0xFFF1F5F9),
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFF16A34A),
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : Center(
+                            child: Text(
+                              widget.product.iconEmoji,
+                              style: const TextStyle(fontSize: 64),
+                            ),
+                          ),
                   ),
                 ),
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../models/produce_model.dart';
 import '../../../services/app_state.dart';
 import '../../../shared/widgets/app_buttons.dart';
 import '../../../shared/widgets/app_card.dart';
@@ -8,6 +9,7 @@ import '../../../shared/widgets/app_header.dart';
 import '../../../shared/widgets/match_score_badge.dart';
 import '../../../shared/widgets/role_switcher_sheet.dart';
 import '../../../shared/widgets/status_chip.dart';
+import '../../../shared/widgets/market_insights_sheet.dart';
 import '../produce/my_produce_screen.dart';
 import '../matches/farmer_matches_screen.dart';
 import '../orders/farmer_orders_screen.dart';
@@ -24,6 +26,15 @@ class FarmerHomeScreen extends StatefulWidget {
 
 class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   int _currentTabIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch real produce data from backend on screen load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.appState.fetchProduceList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +85,14 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   }
 
   Widget _buildHomeTab(BuildContext context) {
+    final hasProduce = widget.appState.produceList.isNotEmpty;
+    final activeProduce = hasProduce ? widget.appState.produceList.first : null;
+    final String cropName = activeProduce?.cropName ?? 'Tomato';
+    final double userQty = activeProduce != null ? activeProduce.availableQuantityKg : 100.0;
+    final double pricePerKg = activeProduce != null ? activeProduce.expectedPricePerKg : 20.0;
+    final double userPayout = userQty * pricePerKg;
+    final double totalLot = userQty + 400.0;
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -112,15 +131,15 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
             ],
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
 
-          // High Priority Opportunity Card
+          // Central Demo Opportunity Card
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Text(
-                  'Your Opportunities',
+                  'Top Buyer Opportunity',
                   style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.w700, fontSize: 16),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -160,7 +179,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Tomato Bulk Demand',
+                            '$cropName Bulk Demand',
                             style: AppTypography.headlineSmall.copyWith(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
@@ -192,11 +211,11 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                   ),
                   child: Row(
                     children: [
-                      Expanded(child: _buildMetricCol('Buyer Needs', '500 kg')),
+                      Expanded(child: _buildMetricCol('Buyer Needs', '${totalLot.toInt()} kg')),
                       Container(width: 1, height: 26, color: AppColors.outlineVariant),
-                      Expanded(child: _buildMetricCol('Your Supply', '100 kg')),
+                      Expanded(child: _buildMetricCol('Your Supply', '${userQty.toInt()} kg')),
                       Container(width: 1, height: 26, color: AppColors.outlineVariant),
-                      Expanded(child: _buildMetricCol('Est. Payout', '₹2,000')),
+                      Expanded(child: _buildMetricCol('Est. Payout', '₹${userPayout.toInt()}')),
                     ],
                   ),
                 ),
@@ -210,7 +229,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Aggregated with 2 nearby farmers (Farmer B 150kg + Farmer C 250kg)',
+                        'Aggregated with nearby cluster farms to fulfill ${totalLot.toInt()} kg wholesale demand',
                         style: AppTypography.bodySmall.copyWith(fontSize: 11),
                       ),
                     ),
@@ -225,6 +244,61 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                   onPressed: () {
                     Navigator.pushNamed(context, '/farmer/matches/detail');
                   },
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // Mandi Price & Demand Trends Banner
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.outlineVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.show_chart_rounded, color: AppColors.primary, size: 20),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Mandi Price & Demand Trends',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    StatusChip.success('Agmarknet'),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Tap any crop to see 30-day price trends and platform buyer demand forecasting.',
+                  style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildCropTrendChip(context, 'Tomato', '🍅', '₹25.0', '+12%'),
+                      const SizedBox(width: 8),
+                      _buildCropTrendChip(context, 'Onion', '🧅', '₹32.0', '+8%'),
+                      const SizedBox(width: 8),
+                      _buildCropTrendChip(context, 'Potato', '🥔', '₹22.0', '+5%'),
+                      const SizedBox(width: 8),
+                      _buildCropTrendChip(context, 'Chilli', '🌶️', '₹45.0', '+18%'),
+                      const SizedBox(width: 8),
+                      _buildCropTrendChip(context, 'Carrot', '🥕', '₹30.0', '+10%'),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -253,56 +327,64 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
           const SizedBox(height: 6),
 
-          AppCard(
-            onTap: () => Navigator.pushNamed(context, '/farmer/produce/detail'),
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFEBEE),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Center(
-                    child: Text('🍅', style: TextStyle(fontSize: 22)),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ...widget.appState.produceList.take(3).map((ProduceItem item) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: AppCard(
+                onTap: () {
+                  widget.appState.setSelectedProduceItem(item);
+                  Navigator.pushNamed(context, '/farmer/produce/detail', arguments: item);
+                },
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: _getProduceColor(item.cropName),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                        child: Text(_getProduceEmoji(item.cropName), style: const TextStyle(fontSize: 22)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              'Tomato (Hybrid Red)',
-                              style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${item.cropName} (${item.variety})',
+                                  style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              StatusChip.green('${item.gradeLabel} (${item.qualityScore.toInt()})'),
+                            ],
                           ),
-                          StatusChip.green('Grade A (87)'),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${item.quantityKg.toInt()} kg available • ₹${item.expectedPricePerKg.toStringAsFixed(0)}/kg',
+                            style: AppTypography.bodySmall.copyWith(fontSize: 12),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '100 kg available • Ready for pickup',
-                        style: AppTypography.bodySmall.copyWith(fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textMuted),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textMuted),
-              ],
-            ),
-          ),
+              ),
+            );
+          }),
 
           const SizedBox(height: 16),
         ],
@@ -497,6 +579,64 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  String _getProduceEmoji(String cropName) {
+    final lower = cropName.toLowerCase();
+    if (lower.contains('tomato')) return '🍅';
+    if (lower.contains('potato')) return '🥔';
+    if (lower.contains('onion')) return '🧅';
+    if (lower.contains('chilli') || lower.contains('pepper')) return '🌶️';
+    if (lower.contains('capsicum')) return '🫑';
+    if (lower.contains('wheat')) return '🌾';
+    if (lower.contains('rice') || lower.contains('paddy')) return '🍚';
+    return '🥬';
+  }
+
+  Color _getProduceColor(String cropName) {
+    final lower = cropName.toLowerCase();
+    if (lower.contains('tomato')) return const Color(0xFFFFEBEE);
+    if (lower.contains('potato')) return const Color(0xFFFFF8E1);
+    if (lower.contains('onion')) return const Color(0xFFF3E5F5);
+    if (lower.contains('chilli')) return const Color(0xFFE8F5E9);
+    if (lower.contains('capsicum')) return const Color(0xFFE0F2F1);
+    return const Color(0xFFF1F8E9);
+  }
+
+  Widget _buildCropTrendChip(BuildContext context, String crop, String emoji, String price, String trend) {
+    return InkWell(
+      onTap: () => MarketInsightsSheet.show(context, crop: crop),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(crop, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+                Row(
+                  children: [
+                    Text(price, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF16A34A))),
+                    const SizedBox(width: 4),
+                    Text(trend, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF15803D))),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

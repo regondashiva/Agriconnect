@@ -13,6 +13,31 @@ class FarmerMatchesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentFarmerName = appState.currentUser.name.trim().isNotEmpty
+        ? appState.currentUser.name.trim()
+        : 'Your Farm';
+
+    final hasProduce = appState.produceList.isNotEmpty;
+    final activeProduce = hasProduce ? appState.produceList.first : null;
+    final String cropName = activeProduce?.cropName ?? 'Tomato';
+    final String cropEmoji = cropName.toLowerCase().contains('onion')
+        ? '🧅'
+        : (cropName.toLowerCase().contains('potato')
+            ? '🥔'
+            : (cropName.toLowerCase().contains('chilli')
+                ? '🌶️'
+                : '🍅'));
+
+    final double userQty = activeProduce != null ? activeProduce.availableQuantityKg : 100.0;
+    final double pricePerKg = activeProduce != null ? activeProduce.expectedPricePerKg : 20.0;
+    final double userPayout = userQty * pricePerKg;
+
+    const double cluster1Qty = 150.0;
+    final double cluster1Payout = cluster1Qty * pricePerKg;
+    const double cluster2Qty = 250.0;
+    final double cluster2Payout = cluster2Qty * pricePerKg;
+    final double totalLot = userQty + cluster1Qty + cluster2Qty;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -35,7 +60,7 @@ class FarmerMatchesScreen extends StatelessWidget {
 
             const SizedBox(height: 14),
 
-            // Main 92% Opportunity Card (SIH Central Demo Transaction)
+            // Main Opportunity Card
             AppCard(
               borderColor: AppColors.primary,
               backgroundColor: Colors.white,
@@ -53,7 +78,7 @@ class FarmerMatchesScreen extends StatelessWidget {
                           color: const Color(0xFFFFEBEE),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text('🍅', style: TextStyle(fontSize: 20)),
+                        child: Text(cropEmoji, style: const TextStyle(fontSize: 20)),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -102,7 +127,7 @@ class FarmerMatchesScreen extends StatelessWidget {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                '500 kg Tomato (Grade A)',
+                                '${totalLot.toInt()} kg $cropName (Grade A)',
                                 style: AppTypography.labelLarge.copyWith(fontSize: 12),
                                 textAlign: TextAlign.end,
                                 maxLines: 1,
@@ -121,7 +146,7 @@ class FarmerMatchesScreen extends StatelessWidget {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                '100 kg (Full batch)',
+                                '${userQty.toInt()} kg (Full batch)',
                                 style: AppTypography.labelLarge.copyWith(
                                   color: AppColors.primary,
                                   fontSize: 12,
@@ -143,7 +168,7 @@ class FarmerMatchesScreen extends StatelessWidget {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                '₹2,000 (₹20/kg)',
+                                '₹${userPayout.toInt()} (₹${pricePerKg.toInt()}/kg)',
                                 style: AppTypography.labelLarge.copyWith(
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.w800,
@@ -170,9 +195,9 @@ class FarmerMatchesScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  _buildFarmerRow('Farmer A (Ramesh - You)', '100 kg • ₹2,000', isYou: true),
-                  _buildFarmerRow('Farmer B (Suresh Rao)', '150 kg • ₹3,000'),
-                  _buildFarmerRow('Farmer C (Ravi Kumar)', '250 kg • ₹5,000'),
+                  _buildFarmerRow('$currentFarmerName (You)', '${userQty.toInt()} kg • ₹${userPayout.toInt()}', isYou: true),
+                  _buildFarmerRow('Cluster Partner Farm 1 (Shabad)', '${cluster1Qty.toInt()} kg • ₹${cluster1Payout.toInt()}'),
+                  _buildFarmerRow('Cluster Partner Farm 2 (Moinabad)', '${cluster2Qty.toInt()} kg • ₹${cluster2Payout.toInt()}'),
 
                   const SizedBox(height: 6),
                   const Divider(),
@@ -187,7 +212,7 @@ class FarmerMatchesScreen extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          '500 / 500 kg (100% Fulfilled)',
+                          '${totalLot.toInt()} / ${totalLot.toInt()} kg (100% Fulfilled)',
                           style: AppTypography.labelLarge.copyWith(
                             color: AppColors.success,
                             fontWeight: FontWeight.w800,
@@ -204,7 +229,9 @@ class FarmerMatchesScreen extends StatelessWidget {
                   const SizedBox(height: 14),
 
                   PrimaryButton(
-                    text: 'ACCEPT OPPORTUNITY & VIEW AGGREGATION',
+                    text: 'Accept Opportunity & View Aggregation',
+                    fontSize: 12.5,
+                    minHeight: 54,
                     icon: Icons.check_circle_rounded,
                     onPressed: () {
                       Navigator.pushNamed(context, '/coordination/aggregation');

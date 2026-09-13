@@ -9,6 +9,8 @@ class PrimaryButton extends StatelessWidget {
   final IconData? icon;
   final Color? backgroundColor;
   final Color? textColor;
+  final double? fontSize;
+  final double? minHeight;
 
   const PrimaryButton({
     super.key,
@@ -18,20 +20,24 @@ class PrimaryButton extends StatelessWidget {
     this.icon,
     this.backgroundColor,
     this.textColor,
+    this.fontSize,
+    this.minHeight,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minWidth: double.infinity,
+        minHeight: minHeight ?? 50,
+      ),
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor ?? AppColors.primaryContainer,
           foregroundColor: textColor ?? Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -58,11 +64,11 @@ class PrimaryButton extends StatelessWidget {
                       text,
                       style: AppTypography.buttonText.copyWith(
                         color: textColor ?? Colors.white,
-                        fontSize: 14,
+                        fontSize: fontSize ?? 13.5,
+                        height: 1.25,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -78,6 +84,8 @@ class SecondaryButton extends StatelessWidget {
   final IconData? icon;
   final Color? borderColor;
   final Color? textColor;
+  final double? fontSize;
+  final double? minHeight;
 
   const SecondaryButton({
     super.key,
@@ -86,19 +94,23 @@ class SecondaryButton extends StatelessWidget {
     this.icon,
     this.borderColor,
     this.textColor,
+    this.fontSize,
+    this.minHeight,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minWidth: double.infinity,
+        minHeight: minHeight ?? 50,
+      ),
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           foregroundColor: textColor ?? AppColors.primary,
           side: BorderSide(color: borderColor ?? AppColors.primary, width: 1.5),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -116,11 +128,11 @@ class SecondaryButton extends StatelessWidget {
                 text,
                 style: AppTypography.buttonText.copyWith(
                   color: textColor ?? AppColors.primary,
-                  fontSize: 14,
+                  fontSize: fontSize ?? 13.5,
+                  height: 1.25,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

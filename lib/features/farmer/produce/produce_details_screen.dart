@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../models/produce_model.dart';
 import '../../../services/app_state.dart';
 import '../../../shared/widgets/app_buttons.dart';
 import '../../../shared/widgets/app_card.dart';
@@ -9,11 +10,22 @@ import '../../../shared/widgets/status_chip.dart';
 
 class ProduceDetailsScreen extends StatelessWidget {
   final AppState appState;
+  final ProduceItem? produceItem;
 
-  const ProduceDetailsScreen({super.key, required this.appState});
+  const ProduceDetailsScreen({
+    super.key,
+    required this.appState,
+    this.produceItem,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final item = produceItem ??
+        appState.selectedProduceItem ??
+        (appState.produceList.isNotEmpty
+            ? appState.produceList.first
+            : ProduceItem.seedFarmerProduce.first);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -31,69 +43,69 @@ class ProduceDetailsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Tomato (Hybrid Red)',
-                              style: AppTypography.headlineMedium.copyWith(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 18,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Batch ID: #PROD-TOM-01',
-                              style: AppTypography.bodySmall.copyWith(fontSize: 12),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      StatusChip.success('Active Listing'),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(child: _buildField('Quantity', '100 kg')),
-                        Container(width: 1, height: 26, color: AppColors.outlineVariant),
-                        Expanded(child: _buildField('Grade', 'Grade A')),
-                        Container(width: 1, height: 26, color: AppColors.outlineVariant),
-                        Expanded(child: _buildField('Expected Price', '₹20 / kg')),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${item.cropName} (${item.variety})',
+                                style: AppTypography.headlineMedium.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 18,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Batch ID: #${item.id.toUpperCase()}',
+                                style: AppTypography.bodySmall.copyWith(fontSize: 12),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        StatusChip.success(item.status),
                       ],
                     ),
-                  ),
-                    const SizedBox(height: 12),
-                      Row(
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
                         children: [
-                          const Icon(Icons.location_on_outlined, size: 16, color: AppColors.secondary),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              'Chevella Farm Hub, Ranga Reddy (12 km from FPO Center)',
-                              style: AppTypography.bodySmall,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
+                          Expanded(child: _buildField('Quantity', '${item.quantityKg.toInt()} kg')),
+                          Container(width: 1, height: 26, color: AppColors.outlineVariant),
+                          Expanded(child: _buildField('Grade', item.gradeLabel)),
+                          Container(width: 1, height: 26, color: AppColors.outlineVariant),
+                          Expanded(child: _buildField('Expected Price', '₹${item.expectedPricePerKg.toStringAsFixed(0)} / kg')),
                         ],
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, size: 16, color: AppColors.secondary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            item.location,
+                            style: AppTypography.bodySmall,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -128,7 +140,7 @@ class ProduceDetailsScreen extends StatelessWidget {
                             Row(
                               children: [
                                 Text(
-                                  '87',
+                                  item.qualityScore.toInt().toString(),
                                   style: AppTypography.headlineLarge.copyWith(
                                     fontSize: 36,
                                     fontWeight: FontWeight.w900,
@@ -157,7 +169,7 @@ class ProduceDetailsScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                'Risk: LOW',
+                                'Risk: ${item.riskLevel}',
                                 style: AppTypography.labelSmall.copyWith(
                                   color: AppColors.success,
                                   fontWeight: FontWeight.w800,
@@ -166,7 +178,7 @@ class ProduceDetailsScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '91% AI Confidence',
+                              '${item.confidenceScore.toInt()}% AI Confidence',
                               style: AppTypography.bodySmall.copyWith(fontSize: 12),
                             ),
                           ],
@@ -183,10 +195,14 @@ class ProduceDetailsScreen extends StatelessWidget {
                       style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
-                    _buildObservation('✓ Good colour consistency across sample batch'),
-                    _buildObservation('✓ Uniform diameter and weight consistency'),
-                    _buildObservation('✓ Farm freshness index: 94%'),
-                    _buildObservation('⚠ Minor superficial blemishes (within Grade A tolerance)'),
+                    if (item.observations.isNotEmpty)
+                      ...item.observations.map((obs) => _buildObservation('✓ $obs'))
+                    else ...[
+                      _buildObservation('✓ Good colour consistency across sample batch'),
+                      _buildObservation('✓ Uniform diameter and weight consistency'),
+                      _buildObservation('✓ Farm freshness index: 94%'),
+                      _buildObservation('⚠ Minor superficial blemishes (within Grade A tolerance)'),
+                    ],
 
                     const SizedBox(height: 14),
 

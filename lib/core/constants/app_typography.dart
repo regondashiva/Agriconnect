@@ -48,12 +48,31 @@ class AppTypography {
     height: 1.35,
   );
 
+  // Titles & Compatibility Styles
+  static TextStyle titleLarge = GoogleFonts.beVietnamPro(
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textNavy,
+  );
+
+  static TextStyle titleMedium = GoogleFonts.beVietnamPro(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textNavy,
+  );
+
   // Labels & Chips
   static TextStyle labelLarge = GoogleFonts.beVietnamPro(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppColors.textNavy,
     letterSpacing: 0.2,
+  );
+
+  static TextStyle labelMedium = GoogleFonts.beVietnamPro(
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textNavy,
   );
 
   static TextStyle labelSmall = GoogleFonts.beVietnamPro(

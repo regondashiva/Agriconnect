@@ -126,11 +126,15 @@ class QualityTrustScreen extends StatelessWidget {
 
               Row(
                 children: [
-                  _buildPhotoCard('Farmer A (100kg)', '🍅 Top Canopy', 'Color: 92%'),
+                  _buildPhotoCard(
+                    'Primary Cluster Lot (100kg)',
+                    '🍅 Top Canopy',
+                    'Color: 92%',
+                  ),
                   const SizedBox(width: 8),
-                  _buildPhotoCard('Farmer B (150kg)', '🍅 Cross Section', 'Firmness: 88%'),
+                  _buildPhotoCard('Cluster Lot B (150kg)', '🍅 Cross Section', 'Firmness: 88%'),
                   const SizedBox(width: 8),
-                  _buildPhotoCard('Farmer C (250kg)', '🍅 Crate Batch', 'Size: 85%'),
+                  _buildPhotoCard('Cluster Lot C (250kg)', '🍅 Crate Batch', 'Size: 85%'),
                 ],
               ),
 

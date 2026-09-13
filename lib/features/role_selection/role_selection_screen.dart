@@ -40,6 +40,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       case UserRole.consumer:
         Navigator.pushNamed(context, '/consumer/registration');
         break;
+      case UserRole.deliveryPartner:
+        Navigator.pushNamed(context, '/delivery/registration');
+        break;
     }
   }
 
@@ -109,6 +112,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       subtitle: 'Buy fresh produce directly for your home.',
                       icon: Icons.shopping_bag_outlined,
                       badgeText: 'Household Grocery',
+                    ),
+                    const SizedBox(height: 10),
+                    _buildRoleCard(
+                      role: UserRole.deliveryPartner,
+                      title: 'DELIVERY PARTNER',
+                      subtitle: 'Pick up sorted vegetables from FPO hubs & deliver to households.',
+                      icon: Icons.two_wheeler_rounded,
+                      badgeText: 'Earn per Trip • Jan Dhan UPI',
                     ),
                     const SizedBox(height: 12),
                   ],

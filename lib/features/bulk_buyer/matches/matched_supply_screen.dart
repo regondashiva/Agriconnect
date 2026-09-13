@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../models/match_model.dart';
+import '../../../models/user_model.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../services/app_state.dart';
+import '../../../services/razorpay_payment_service.dart';
 import '../../../shared/widgets/app_buttons.dart';
 import '../../../shared/widgets/app_card.dart';
 import '../../../shared/widgets/match_score_badge.dart';
@@ -15,6 +18,50 @@ class MatchedSupplyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final match = appState.activeMatch;
+    final double matchScore = match?.matchScorePercent ?? 92.0;
+    final String cropName = match?.cropName.isNotEmpty == true ? match!.cropName : (appState.produceList.isNotEmpty ? appState.produceList.first.cropName : 'Tomato');
+
+    final List<SupplyContributor> contributors = (match != null && match.contributors.isNotEmpty)
+        ? match.contributors
+        : (appState.produceList.isNotEmpty
+            ? appState.produceList.map((p) => SupplyContributor(
+                farmerId: p.farmerId,
+                farmerName: p.farmerName.isNotEmpty ? p.farmerName : 'Cluster Farm Partner',
+                location: p.location.isNotEmpty ? p.location : 'Cluster Hub',
+                quantityKg: p.availableQuantityKg,
+                payoutAmount: p.availableQuantityKg * p.expectedPricePerKg,
+              )).toList()
+            : [
+                SupplyContributor(
+                  farmerId: 'c1',
+                  farmerName: appState.currentUser.name.isNotEmpty && appState.currentUser.role == UserRole.farmer
+                      ? appState.currentUser.name
+                      : 'Cluster Farm Partner 1',
+                  location: 'Chevella Agro Cluster',
+                  quantityKg: 100.0,
+                  payoutAmount: 2000.0,
+                ),
+                const SupplyContributor(
+                  farmerId: 'c2',
+                  farmerName: 'Cluster Farm Partner 2',
+                  location: 'Shabad Center',
+                  quantityKg: 150.0,
+                  payoutAmount: 3000.0,
+                ),
+                const SupplyContributor(
+                  farmerId: 'c3',
+                  farmerName: 'Cluster Farm Partner 3',
+                  location: 'Moinabad Cluster',
+                  quantityKg: 250.0,
+                  payoutAmount: 5000.0,
+                ),
+              ]);
+
+    final int farmerCount = contributors.length;
+    final double calculatedKg = contributors.fold<double>(0.0, (s, c) => s + c.quantityKg);
+    final double totalKg = match?.matchedQuantityKg ?? (calculatedKg > 0 ? calculatedKg : 500.0);
+    final double calculatedAmt = contributors.fold<double>(0.0, (s, c) => s + c.payoutAmount);
+    final double totalAmt = match?.totalEstimatedValue ?? (calculatedAmt > 0 ? calculatedAmt : 10000.0);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -37,14 +84,14 @@ class MatchedSupplyScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const MatchScoreBadge(scorePercent: 92, isLarge: true),
+                    MatchScoreBadge(scorePercent: matchScore, isLarge: true),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '500 kg Tomato Ready',
+                            '${totalKg.toInt()} kg $cropName Ready',
                             style: AppTypography.headlineSmall.copyWith(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
@@ -53,7 +100,7 @@ class MatchedSupplyScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Aggregated from 3 verified farmers in Chevella / Shabad cluster.',
+                            'Aggregated from $farmerCount verified farmer(s) in active cluster.',
                             style: AppTypography.bodySmall.copyWith(fontSize: 12),
                           ),
                         ],
@@ -78,7 +125,7 @@ class MatchedSupplyScreen extends StatelessWidget {
                         StatusChip.success('100% Target Met'),
                       ],
                     ),
-                    ...match.contributors.map((c) => _buildSupplyRow(
+                    ...contributors.map((c) => _buildSupplyRow(
                       c.farmerName,
                       c.location,
                       '${c.quantityKg.toInt()} kg',
@@ -91,7 +138,14 @@ class MatchedSupplyScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Total Aggregated Lot:', style: AppTypography.labelLarge),
-                        Text('500 kg (₹10,000)', style: AppTypography.headlineSmall.copyWith(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                        Text(
+                          '${totalKg.toInt()} kg (₹${totalAmt.toInt()})',
+                          style: AppTypography.headlineSmall.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -160,17 +214,191 @@ class MatchedSupplyScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               PrimaryButton(
-                text: 'PLACE BULK ORDER (₹10,000)',
-                icon: Icons.check_circle_rounded,
-                onPressed: () {
-                  Navigator.pushNamed(context, '/coordination/logistics');
-                },
+                text: 'PLACE BULK ORDER (₹${totalAmt.toInt()})',
+                icon: Icons.shield_outlined,
+                onPressed: () => _showEscrowAdvanceSheet(context, totalAmt),
               ),
 
               const SizedBox(height: 16),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showEscrowAdvanceSheet(BuildContext context, double totalAmt) {
+    final advanceAmt = (totalAmt * 0.20).roundToDouble();
+    final remainingAmt = (totalAmt * 0.80).roundToDouble();
+    bool isProcessing = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.security_rounded, color: AppColors.primary, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Escrow Milestone Payment', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800)),
+                          Text('Secure 2-stage smart contract payout', style: AppTypography.bodySmall),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.outlineVariant),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Total Order Value', style: AppTypography.bodyMedium),
+                            Text('₹${totalAmt.toInt()}', style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800)),
+                          ],
+                        ),
+                        const Divider(height: 24),
+                        Row(
+                          children: [
+                            const Icon(Icons.lock_clock_rounded, color: Color(0xFFD97706), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('20% Advance Lock (Now)', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700)),
+                                  Text('Held in smart escrow until transit starts', style: AppTypography.bodySmall.copyWith(fontSize: 11)),
+                                ],
+                              ),
+                            ),
+                            Text('₹${advanceAmt.toInt()}', style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800, color: const Color(0xFFD97706))),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Icon(Icons.verified_user_rounded, color: AppColors.primary, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('80% Balance On Delivery', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700)),
+                                  Text('Released to farmers via 6-digit OTP', style: AppTypography.bodySmall.copyWith(fontSize: 11)),
+                                ],
+                              ),
+                            ),
+                            Text('₹${remainingAmt.toInt()}', style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800, color: AppColors.primary)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  if (isProcessing)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else
+                    PrimaryButton(
+                      text: 'LOCK ₹${advanceAmt.toInt()} IN ESCROW & DISPATCH',
+                      icon: Icons.lock_outline_rounded,
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        final orderId = 'AGR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+
+                        RazorpayPaymentService.instance.openCheckout(
+                          context: context,
+                          amountInr: advanceAmt,
+                          internalOrderId: orderId,
+                          customerName: appState.currentUser.name.isNotEmpty ? appState.currentUser.name : 'FreshBasket Mandi',
+                          customerPhone: appState.currentUser.phoneNumber.isNotEmpty ? appState.currentUser.phoneNumber : '9876543210',
+                          customerEmail: 'buyer@agriconnect.org',
+                          paymentType: 'advance_20',
+                          onSuccess: (result) async {
+                            final success = await appState.payEscrowAdvance(
+                              orderId: orderId,
+                              totalAmount: totalAmt,
+                            );
+
+                            if (context.mounted) {
+                              if (success) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: AppColors.primary,
+                                    content: Text('₹${advanceAmt.toInt()} locked in Escrow via Razorpay! Mini-truck dispatched.'),
+                                  ),
+                                );
+                                Navigator.pushNamed(context, '/coordination/tracking');
+                              }
+                            }
+                          },
+                          onFailure: (errMsg) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: Colors.red.shade700,
+                                  content: Text('Escrow Advance Failed: $errMsg'),
+                                ),
+                              );
+                            }
+                          },
+                        );
+                      },
+                    ),
+
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

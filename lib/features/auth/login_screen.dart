@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/user_model.dart';
+import '../../repositories/auth_repository.dart';
+import '../../services/api_service.dart';
 import '../../services/app_state.dart';
 import 'otp_screen.dart';
 
@@ -13,43 +16,9 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _phoneController = TextEditingController(text: '9876543210');
+  final TextEditingController _phoneController = TextEditingController();
+  String _selectedRole = 'farmer';
   bool _isLoading = false;
-  String _selectedRoleName = 'Farmer (Ramesh)';
-  IconData _selectedRoleIcon = Icons.agriculture_rounded;
-
-  final List<Map<String, dynamic>> _demoProfiles = [
-    {
-      'label': 'Farmer (Ramesh)',
-      'phone': '9876543210',
-      'icon': Icons.agriculture_rounded,
-      'subtitle': 'Sell produce, mandi advisory & payout',
-    },
-    {
-      'label': 'FPO (Suresh)',
-      'phone': '9876543211',
-      'icon': Icons.hub_rounded,
-      'subtitle': 'Aggregate supply & logistics dispatch',
-    },
-    {
-      'label': 'Bulk Buyer (FreshBasket)',
-      'phone': '9876543212',
-      'icon': Icons.storefront_rounded,
-      'subtitle': 'Bulk procurement & smart matching',
-    },
-    {
-      'label': 'Consumer (Ananya)',
-      'phone': '9876543213',
-      'icon': Icons.shopping_basket_rounded,
-      'subtitle': 'Farm-fresh grocery basket delivery',
-    },
-    {
-      'label': 'New User / Guest',
-      'phone': '9988776655',
-      'icon': Icons.person_add_alt_1_rounded,
-      'subtitle': 'Create new account after verification',
-    },
-  ];
 
   bool get _isValidPhone {
     final clean = _phoneController.text.replaceAll(RegExp(r'\D'), '');
@@ -59,170 +28,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _phoneController.addListener(() {
-      setState(() {});
-    });
-  }
-
-  void _handleSendOtp() {
-    final phone = _phoneController.text.trim().replaceAll(RegExp(r'\D'), '');
-    if (phone.length < 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid 10-digit mobile number'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    Future.delayed(const Duration(milliseconds: 350), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      widget.appState.setPendingAuthPhone(phone);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => OtpScreen(
-            appState: widget.appState,
-            phoneNumber: phone,
-          ),
-        ),
-      );
-    });
-  }
-
-  void _openDemoProfilePicker() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.75,
-            ),
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Select Demo Profile',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Quick-fill test credentials for rapid evaluation',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ..._demoProfiles.map((profile) {
-                    final isSelected = _phoneController.text == profile['phone'];
-                    return InkWell(
-                      onTap: () {
-                        setState(() {
-                          _selectedRoleName = profile['label'];
-                          _selectedRoleIcon = profile['icon'];
-                          _phoneController.text = profile['phone'];
-                        });
-                        Navigator.pop(ctx);
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFF0FDF4) : const Color(0xFFF9FAFB),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected ? const Color(0xFF15803D) : const Color(0xFFE5E7EB),
-                            width: isSelected ? 1.5 : 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: isSelected ? const Color(0xFFDCFCE7) : const Color(0xFFE5E7EB),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                profile['icon'] as IconData,
-                                color: isSelected ? const Color(0xFF15803D) : const Color(0xFF4B5563),
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    profile['label'] as String,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF111827),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    profile['subtitle'] as String,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF6B7280),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Text(
-                              profile['phone'] as String,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF15803D),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
+    _selectedRole = User.roleToString(widget.appState.activeRole);
+    _phoneController.addListener(() => setState(() {}));
   }
 
   @override
@@ -231,347 +38,259 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _handleSendOtp() async {
+    final phone = _phoneController.text.trim().replaceAll(RegExp(r'\D'), '');
+    if (phone.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Invalid phone number format. Please enter a 10-digit mobile number.'),
+        backgroundColor: AppColors.error,
+      ));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final fullPhone = '+91$phone';
+      widget.appState.setPendingAuthPhone(phone);
+
+      final sessionId = await AuthRepository.instance.sendOtp(
+        phoneNumber: fullPhone,
+        role: _selectedRole,
+      );
+      widget.appState.setPendingSessionId(sessionId);
+
+      final targetRole = User.roleFromString(_selectedRole);
+      widget.appState.selectRole(targetRole);
+
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OtpScreen(
+            appState: widget.appState,
+            phoneNumber: phone,
+            sessionId: sessionId,
+            selectedRole: targetRole,
+          ),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.statusCode == 400
+            ? 'Invalid phone number format. Please include a valid +91 mobile number.'
+            : e.message),
+        backgroundColor: AppColors.error,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Failed to send OTP: $e'),
+        backgroundColor: AppColors.error,
+      ));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFCFDFD),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Center(
-            child: InkWell(
-              onTap: () => Navigator.maybePop(context),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x0A000000),
-                      blurRadius: 4,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  size: 20,
-                  color: Color(0xFF111827),
-                ),
-              ),
-            ),
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF164E2A)),
+          onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Login',
-          style: TextStyle(
-            color: Color(0xFF111827),
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
-          ),
-        ),
-        centerTitle: false,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 12),
-
-              // AgriConnect Green Squircle Leaf Badge Icon
+              // Logo / Header
               Container(
-                width: 58,
-                height: 58,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF15803D),
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x2E15803D),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Center(
-                  child: Icon(
-                    Icons.eco_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
+                child: const Icon(Icons.eco_rounded, color: Color(0xFF15803D), size: 32),
               ),
-
-              const SizedBox(height: 22),
-
-              // Title: Welcome to AgriConnect
+              const SizedBox(height: 20),
               const Text(
-                'Welcome to AgriConnect',
+                'Passwordless Sign In\n& Registration',
                 style: TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0F2617),
-                  letterSpacing: -0.5,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF164E2A),
+                  height: 1.2,
                 ),
               ),
-
-              const SizedBox(height: 6),
-
-              // Subtitle
-              const Text(
-                'Enter your 10-digit mobile number to access your workspace or register.',
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: Color(0xFF4B5563),
-                  height: 1.38,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Demo Quick-Fill Profiles Label
-              const Text(
-                'Demo Quick-Fill Profiles',
-                style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF111827),
-                ),
-              ),
-
               const SizedBox(height: 8),
-
-              // Demo Quick-Fill Selector Dropdown Box (Exact design)
-              InkWell(
-                onTap: _openDemoProfilePicker,
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: const Color(0xFF15803D),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _selectedRoleIcon,
-                        color: const Color(0xFF15803D),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _selectedRoleName,
-                          style: const TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF15803D),
-                          ),
-                        ),
-                      ),
-                      const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: Color(0xFF15803D),
-                        size: 22,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 22),
-
-              // Mobile Number Label
               const Text(
-                'Mobile Number',
-                style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF111827),
-                ),
+                'Enter your 10-digit mobile number. We will send a secure 6-digit OTP to verify your identity.',
+                style: TextStyle(fontSize: 13.5, color: Color(0xFF6B7280), height: 1.35),
               ),
+              const SizedBox(height: 28),
 
-              const SizedBox(height: 8),
-
-              // Mobile Number Input Box (Exact design with Flag +91 | Number Checkmark)
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: _isValidPhone ? const Color(0xFF15803D) : const Color(0xFFD1D5DB),
-                    width: _isValidPhone ? 1.5 : 1.2,
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x06000000),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Country Code Section (clean, no inner box)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 14, right: 6),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('🇮🇳', style: TextStyle(fontSize: 20)),
-                          const SizedBox(width: 6),
-                          const Text(
-                            '+91',
-                            style: TextStyle(
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF111827),
-                            ),
-                          ),
-                          const SizedBox(width: 3),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 18,
-                            color: Color(0xFF6B7280),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 1,
-                            height: 22,
-                            color: const Color(0xFFE5E7EB),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Phone Text Field
-                    Expanded(
-                      child: TextField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        style: const TextStyle(
-                          fontSize: 16.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                          color: Color(0xFF111827),
-                        ),
-                        decoration: const InputDecoration(
-                          hintText: '9876543210',
-                          hintStyle: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xFF9CA3AF),
-                            letterSpacing: 0.5,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 14),
-                        ),
-                      ),
-                    ),
-
-                    // Green Checkmark
-                    Padding(
-                      padding: const EdgeInsets.only(right: 14),
-                      child: _isValidPhone
-                          ? Container(
-                              width: 22,
-                              height: 22,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF15803D),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                            )
-                          : const SizedBox(width: 22),
-                    ),
-                  ],
-                ),
+              // Role Selector
+              const Text(
+                'I am participating as:',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF374151)),
               ),
-
               const SizedBox(height: 10),
-
-              // Helper Info Note
-              const Row(
-                children: [
-                  Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF6B7280)),
-                  SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'An OTP code will be sent to verify your number.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              _buildRoleSelector(),
 
               const SizedBox(height: 28),
 
-              // Action Button: GET OTP ->
+              // Phone Field
+              const Text(
+                'Mobile Number',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF374151)),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                maxLength: 10,
+                enabled: !_isLoading,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                decoration: InputDecoration(
+                  counterText: '',
+                  hintText: '10-digit mobile number',
+                  hintStyle: const TextStyle(fontWeight: FontWeight.normal, color: Color(0xFF9CA3AF)),
+                  prefixText: '+91  ',
+                  prefixStyle: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF164E2A), fontSize: 17),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFD1D5DB), width: 1.5),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF164E2A), width: 2),
+                  ),
+                  disabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.5),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Send OTP Button
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleSendOtp,
+                  onPressed: (_isValidPhone && !_isLoading) ? _handleSendOtp : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF15803D),
+                    backgroundColor: const Color(0xFF164E2A),
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xFFD1D5DB),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
                   ),
                   child: _isLoading
                       ? const SizedBox(
                           width: 22,
                           height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                         )
                       : const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              'GET OTP',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
+                            Icon(Icons.sms_rounded, size: 20),
                             SizedBox(width: 8),
-                            Icon(Icons.arrow_forward_rounded, size: 18),
+                            Text(
+                              'SEND VERIFICATION OTP',
+                              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: 0.6),
+                            ),
                           ],
                         ),
                 ),
               ),
 
               const SizedBox(height: 24),
+
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.lock_outline_rounded, size: 14, color: Color(0xFF9CA3AF)),
+                    SizedBox(width: 6),
+                    Text(
+                      'Secured by Twilio SMS & PostgreSQL Auth',
+                      style: TextStyle(fontSize: 11.5, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRoleSelector() {
+    final roles = [
+      {'value': 'farmer', 'label': 'Farmer', 'icon': Icons.agriculture_rounded},
+      {'value': 'fpo', 'label': 'FPO', 'icon': Icons.hub_rounded},
+      {'value': 'bulk_buyer', 'label': 'Bulk Buyer', 'icon': Icons.storefront_rounded},
+      {'value': 'consumer', 'label': 'Consumer', 'icon': Icons.shopping_basket_rounded},
+      {'value': 'delivery_partner', 'label': 'Delivery Partner', 'icon': Icons.electric_moped_rounded},
+    ];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: roles.map((r) {
+        final isSelected = _selectedRole == r['value'];
+        return GestureDetector(
+          onTap: () {
+            setState(() => _selectedRole = r['value'] as String);
+            widget.appState.selectRole(User.roleFromString(_selectedRole));
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFF164E2A) : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected ? const Color(0xFF164E2A) : const Color(0xFFD1D5DB),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(r['icon'] as IconData,
+                    size: 16,
+                    color: isSelected ? Colors.white : const Color(0xFF6B7280)),
+                const SizedBox(width: 6),
+                Text(
+                  r['label'] as String,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isSelected ? Colors.white : const Color(0xFF374151),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

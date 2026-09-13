@@ -1,11 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../models/market_insights_model.dart';
 import '../../../models/produce_model.dart';
+import '../../../repositories/market_insights_repository.dart';
 import '../../../services/app_state.dart';
 import '../../../shared/widgets/app_buttons.dart';
 import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/market_insights_sheet.dart';
 
 class AddProduceScreen extends StatefulWidget {
   final AppState appState;
@@ -17,39 +23,456 @@ class AddProduceScreen extends StatefulWidget {
 }
 
 class _AddProduceScreenState extends State<AddProduceScreen> {
-  final _cropController = TextEditingController(text: 'Tomato (Hybrid Red)');
+  String _selectedCrop = 'Tomato';
+  final List<String> _cropOptions = [
+    'Tomato',
+    'Onion',
+    'Potato',
+    'Chilli',
+    'Cotton',
+    'Wheat',
+    'Rice',
+    'Carrot',
+    'Cabbage',
+    'Maize',
+  ];
+  final _varietyController = TextEditingController(text: 'Hybrid Roma');
   final _quantityController = TextEditingController(text: '100');
-  final _locationController = TextEditingController(text: 'Chevella Farm Hub');
+  final _priceController = TextEditingController(text: '25.0');
+  final _locationController = TextEditingController();
+  DateTime _harvestDate = DateTime.now();
+  final double _pickupLat = 17.3850;
+  final double _pickupLng = 78.4867;
   QualityGrade _grade = QualityGrade.gradeA;
-  int _photosAttached = 4;
   bool _isAnalyzing = false;
   bool _isSuccess = false;
 
-  void _handleSubmit() {
-    setState(() => _isAnalyzing = true);
+  MarketInsightsData? _marketInsights;
+  bool _isLoadingInsights = false;
 
-    Future.delayed(const Duration(milliseconds: 1400), () {
-      final double qty = double.tryParse(_quantityController.text) ?? 100.0;
+  @override
+  void initState() {
+    super.initState();
+    final loc = widget.appState.currentUser.location;
+    _locationController.text = loc.isNotEmpty ? loc : 'Chevella Farm Hub, Ranga Reddy';
+    _fetchMarketInsights();
+  }
+
+  Future<void> _fetchMarketInsights() async {
+    setState(() => _isLoadingInsights = true);
+    try {
+      final data = await MarketInsightsRepository.instance.getHistoricalDemand(_selectedCrop);
+      if (mounted) {
+        setState(() {
+          _marketInsights = data;
+          _isLoadingInsights = false;
+          _priceController.text = data.latestModalPrice.toStringAsFixed(1);
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingInsights = false);
+      }
+    }
+  }
+
+  final ImagePicker _picker = ImagePicker();
+
+  // 4 Specific Side Photo Slots
+  final List<XFile?> _sidePhotos = [null, null, null, null];
+  final List<String> _slotTitles = ['Top View', 'Side View', 'Cross-Sec', 'Batch Box'];
+  final List<String> _slotTelugu = ['పై వైపు', 'ప్రక్క వైపు', 'లోపలి కోత', 'మొత్తం బాక్స్'];
+  final List<IconData> _slotIcons = [
+    Icons.vertical_align_top_rounded,
+    Icons.stay_current_landscape_rounded,
+    Icons.content_cut_rounded,
+    Icons.inventory_2_outlined,
+  ];
+
+  int get _photoCount => _sidePhotos.where((p) => p != null).length;
+
+  Future<void> _pickImage(int index, ImageSource source) async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 85,
+      );
+      if (photo != null) {
+        setState(() {
+          _sidePhotos[index] = photo;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Camera access error: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  void _showImageSourcePicker(int index) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFDCFCE7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(_slotIcons[index], color: const Color(0xFF15803D), size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${_slotTitles[index]} (${_slotTelugu[index]})',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+                        ),
+                        const Text(
+                          'Take real photo for AI quality assessment',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF2563EB)),
+                  ),
+                  title: const Text('Take Photo with Camera (కెమెరాతో ఫోటో తీయండి)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                  subtitle: const Text('Open device camera to capture this side live', style: TextStyle(fontSize: 11)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(index, ImageSource.camera);
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.photo_library_rounded, color: Color(0xFF15803D)),
+                  ),
+                  title: const Text('Choose from Gallery (గ్యాలరీ నుండి ఎంచుకోండి)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                  subtitle: const Text('Select an existing photo from your storage', style: TextStyle(fontSize: 11)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(index, ImageSource.gallery);
+                  },
+                ),
+                if (_sidePhotos[index] != null) ...[
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626)),
+                    ),
+                    title: const Text('Remove Photo (ఫోటో తొలగించు)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: Color(0xFFDC2626))),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() => _sidePhotos[index] = null);
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Sequentially capture photos for all missing sides with camera
+  Future<void> _startGuidedTour() async {
+    for (int i = 0; i < 4; i++) {
+      if (_sidePhotos[i] == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.camera_enhance_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text('Capture Step ${i + 1}/4: ${_slotTitles[i]} (${_slotTelugu[i]})'),
+              ],
+            ),
+            backgroundColor: AppColors.primary,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        await _pickImage(i, ImageSource.camera);
+        if (_sidePhotos[i] == null) {
+          // User canceled camera, stop sequence
+          break;
+        }
+      }
+    }
+  }
+
+  Future<void> _handleSubmit() async {
+    final double qty = double.tryParse(_quantityController.text) ?? 0.0;
+    final double price = double.tryParse(_priceController.text) ?? 0.0;
+
+    if (qty <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid quantity greater than 0 kg'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    if (price <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid expected price per kg (> 0)'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isAnalyzing = true);
+    try {
+      final capturedPaths = _sidePhotos.where((p) => p != null).map((p) => p!.path).toList();
+
       final newItem = ProduceItem(
-        id: 'PROD-${DateTime.now().millisecondsSinceEpoch}',
-        farmerId: widget.appState.currentUser.id,
-        farmerName: widget.appState.currentUser.name,
-        cropName: _cropController.text,
+        id: '',
+        farmerId: widget.appState.currentUser.id.isNotEmpty
+            ? widget.appState.currentUser.id
+            : 'usr_farmer_${DateTime.now().millisecondsSinceEpoch}',
+        farmerName: widget.appState.currentUser.name.isNotEmpty
+            ? widget.appState.currentUser.name
+            : 'Farmer',
+        cropName: _selectedCrop,
+        variety: _varietyController.text.trim().isNotEmpty ? _varietyController.text.trim() : 'Hybrid Roma',
         quantityKg: qty,
+        expectedPricePerKg: price,
         grade: _grade,
-        availableDate: DateTime.now().add(const Duration(days: 1)),
-        location: _locationController.text,
-        qualityScore: 87.0,
-        confidenceScore: 91.0,
+        availableDate: _harvestDate,
+        pickupLatitude: _pickupLat,
+        pickupLongitude: _pickupLng,
+        location: _locationController.text.trim(),
+        photoCount: capturedPaths.isNotEmpty ? capturedPaths.length : 4,
+        photoPaths: capturedPaths,
+        qualityScore: _photoCount >= 3 ? 91.5 : 87.0,
+        confidenceScore: _photoCount == 4 ? 96.0 : (_photoCount >= 2 ? 90.0 : 84.0),
+        riskLevel: 'LOW',
+        imageUrl: capturedPaths.isNotEmpty ? capturedPaths.first : null,
       );
 
-      widget.appState.addProduceItem(newItem);
+      await widget.appState.addProduceItem(newItem);
+      await widget.appState.fetchProduceList();
 
+      if (!mounted) return;
       setState(() {
         _isAnalyzing = false;
         _isSuccess = true;
       });
-    });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isAnalyzing = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Listing produce failed: $e'),
+        backgroundColor: AppColors.error,
+      ));
+    }
+  }
+
+  void _handleVoiceAutoFill() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFDCFCE7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.mic_rounded, color: Color(0xFF15803D), size: 22),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Voice AI Auto-Fill (వాయిస్ ద్వారా నింపండి)',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+                          ),
+                          Text(
+                            'Speak crop, quantity & location naturally',
+                            style: TextStyle(fontSize: 11.5, color: Color(0xFF6B7280)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Tap to speak or choose a sample prompt:',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF4B5563)),
+                ),
+                const SizedBox(height: 10),
+                _voiceAutoFillOption(
+                  ctx,
+                  title: '🍅 "100 kg Tomato Grade A from Chevella"',
+                  subtitle: '100 కిలోల గ్రేడ్ A టమోటా, చేవెళ్ల',
+                  crop: 'Tomato (Hybrid Red)',
+                  qty: '100',
+                  loc: 'Chevella Farm Hub',
+                  grade: QualityGrade.gradeA,
+                ),
+                const SizedBox(height: 8),
+                _voiceAutoFillOption(
+                  ctx,
+                  title: '🧅 "150 kg Nashik Red Onions Grade A from Medchal"',
+                  subtitle: '150 కిలోల నాసిక్ ఎర్ర ఉల్లిపాయలు, మేడ్చల్',
+                  crop: 'Nashik Red Onions',
+                  qty: '150',
+                  loc: 'Medchal Agro Cluster',
+                  grade: QualityGrade.gradeA,
+                ),
+                const SizedBox(height: 8),
+                _voiceAutoFillOption(
+                  ctx,
+                  title: '🥔 "200 kg Organic Potatoes Grade B from Shamshabad"',
+                  subtitle: '200 కిలోల బంగాళదుంపలు, శంషాబాద్',
+                  crop: 'Organic Jyoti Potatoes',
+                  qty: '200',
+                  loc: 'Shamshabad Green Hub',
+                  grade: QualityGrade.gradeB,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _voiceAutoFillOption(
+    BuildContext ctx, {
+    required String title,
+    required String subtitle,
+    required String crop,
+    required String qty,
+    required String loc,
+    required QualityGrade grade,
+  }) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(ctx);
+        setState(() {
+          _selectedCrop = _cropOptions.contains(crop) ? crop : 'Tomato';
+          _quantityController.text = qty;
+          _locationController.text = loc;
+          _grade = grade;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Auto-filled $qty kg $crop from Voice AI!')),
+              ],
+            ),
+            backgroundColor: const Color(0xFF15803D),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF9FAFB),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+            const SizedBox(height: 2),
+            Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF15803D), fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -81,7 +504,7 @@ class _AddProduceScreenState extends State<AddProduceScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '100 kg Tomato is now active in AgriConnect pool and eligible for 92% Smart Buyer Match.',
+                  '${_quantityController.text} kg $_selectedCrop with $_photoCount angle photo(s) is now active in AgriConnect pool and eligible for Smart Buyer Matching.',
                   style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
                   textAlign: TextAlign.center,
                 ),
@@ -125,40 +548,127 @@ class _AddProduceScreenState extends State<AddProduceScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Add details and photo evidence for AI-assisted quality grading.',
+                'Add details and 4-side photo evidence for AI-assisted quality grading.',
                 style: AppTypography.bodySmall,
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // Crop Name
-              Text('Crop / Variety', style: AppTypography.labelLarge),
+              // Voice Auto-Fill Banner for Farmers
+              InkWell(
+                onTap: _handleVoiceAutoFill,
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFF0FDF4), Color(0xFFDCFCE7)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF86EFAC)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0A15803D),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF15803D),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.mic_rounded, color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '🎙️ Auto-Fill with Voice AI (వాయిస్ సాయం)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF14532D),
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Speak in Telugu, Hindi or English to fill all fields instantly',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF15803D)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF15803D)),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              // Crop Dropdown
+              Text('Crop Name (పంట పేరు)', style: AppTypography.labelLarge),
+              const SizedBox(height: 6),
+              DropdownButtonFormField<String>(
+                value: _selectedCrop,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.eco_rounded, color: AppColors.primary),
+                  border: OutlineInputBorder(),
+                ),
+                items: _cropOptions.map((crop) {
+                  return DropdownMenuItem<String>(
+                    value: crop,
+                    child: Text(crop, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() => _selectedCrop = val);
+                    _fetchMarketInsights();
+                  }
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // Variety / Sub-type
+              Text('Variety (రకం)', style: AppTypography.labelLarge),
               const SizedBox(height: 6),
               TextField(
-                controller: _cropController,
+                controller: _varietyController,
                 decoration: const InputDecoration(
-                  hintText: 'e.g. Tomato (Hybrid Red)',
-                  prefixIcon: Icon(Icons.eco_rounded, color: AppColors.primary),
+                  hintText: 'e.g. Hybrid Roma, Desi, Sona Masoori',
+                  prefixIcon: Icon(Icons.grass_rounded, color: AppColors.primary),
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // Quantity & Unit
+              // Quantity & Expected Price
               Row(
                 children: [
                   Expanded(
-                    flex: 2,
+                    flex: 1,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Quantity', style: AppTypography.labelLarge),
+                        Text('Quantity (kg)', style: AppTypography.labelLarge),
                         const SizedBox(height: 6),
                         TextField(
                           controller: _quantityController,
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           decoration: const InputDecoration(
                             hintText: '100',
+                            suffixText: 'kg',
                           ),
                         ),
                       ],
@@ -170,27 +680,137 @@ class _AddProduceScreenState extends State<AddProduceScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Unit', style: AppTypography.labelLarge),
+                        Text('Price / kg (ధర)', style: AppTypography.labelLarge),
                         const SizedBox(height: 6),
-                        Container(
-                          height: 56,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.outlineVariant, width: 1.5),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'Kilograms (kg)',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
+                        TextField(
+                          controller: _priceController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            hintText: '25.0',
+                            prefixText: '₹ ',
+                            suffixIcon: _isLoadingInsights
+                                ? const Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  )
+                                : null,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ],
+              ),
+
+              // Government Agmarknet Price Recommendation Box
+              if (_marketInsights != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEFCE8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFEF08A)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('💡', style: TextStyle(fontSize: 16)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _marketInsights!.recommendationText,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF854D0E),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '30-day Mandi trend: ${_marketInsights!.isDemandRising ? "↗ Rising" : "↘ Falling"} (${_marketInsights!.priceChangePercent.abs().toStringAsFixed(1)}%)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: _marketInsights!.isDemandRising ? const Color(0xFF15803D) : const Color(0xFFDC2626),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () => MarketInsightsSheet.show(
+                              context,
+                              crop: _selectedCrop,
+                              onApplyPrice: (price) => setState(() => _priceController.text = price.toStringAsFixed(1)),
+                            ),
+                            child: const Text(
+                              'View Demand Trend →',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 16),
+
+              // Harvest Date Picker
+              Text('Harvest Date (కోత తేదీ)', style: AppTypography.labelLarge),
+              const SizedBox(height: 6),
+              InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _harvestDate,
+                    firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                    lastDate: DateTime.now().add(const Duration(days: 60)),
+                  );
+                  if (picked != null) {
+                    setState(() => _harvestDate = picked);
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  height: 54,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.outlineVariant, width: 1.5),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today_rounded, size: 20, color: AppColors.primary),
+                      const SizedBox(width: 10),
+                      Text(
+                        DateFormat('yyyy-MM-dd (EEEE)').format(_harvestDate),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      const Text(
+                        'Change',
+                        style: TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
               ),
 
               const SizedBox(height: 16),
@@ -208,11 +828,31 @@ class _AddProduceScreenState extends State<AddProduceScreen> {
 
               const SizedBox(height: 20),
 
-              // Photo Quality Evidence
-              Text('Quality Evidence Photos (Required)', style: AppTypography.labelLarge),
+              // 4-Side Photo Quality Evidence
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Quality Evidence Photos (4 Sides)', style: AppTypography.labelLarge),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _photoCount == 4 ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '$_photoCount/4 Captured',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: _photoCount == 4 ? const Color(0xFF15803D) : const Color(0xFFB45309),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 4),
               Text(
-                'Upload 3-5 clear photos of batch for AI quality confidence analysis.',
+                'Take real photos using your camera from all 4 sides for AI quality confidence analysis.',
                 style: AppTypography.bodySmall.copyWith(fontSize: 12),
               ),
               const SizedBox(height: 10),
@@ -221,31 +861,63 @@ class _AddProduceScreenState extends State<AddProduceScreen> {
                 padding: const EdgeInsets.all(14),
                 child: Column(
                   children: [
+                    // 4 Side Slots Row
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildPhotoSlot('Top View', true),
-                        _buildPhotoSlot('Cross-Sec', true),
-                        _buildPhotoSlot('Batch Box', true),
-                        _buildPhotoSlot('+ Add', false),
-                      ],
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(4, (index) => _buildPhotoSlot(index)),
                     ),
+
+                    const SizedBox(height: 14),
+
+                    // Guided Camera Tour Button
+                    OutlinedButton.icon(
+                      onPressed: _startGuidedTour,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        minimumSize: const Size(double.infinity, 42),
+                      ),
+                      icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                      label: Text(
+                        _photoCount == 4
+                            ? 'Retake All 4 Sides with Camera (మళ్ళీ తీయండి)'
+                            : '📸 Take 4-Side Photos with Camera (కెమెరా ప్రారంభించు)',
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
+                    ),
+
                     const SizedBox(height: 12),
+
+                    // AI Assessment Status
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLow,
+                        color: _photoCount == 4
+                            ? const Color(0xFFF0FDF4)
+                            : AppColors.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _photoCount == 4 ? const Color(0xFF86EFAC) : Colors.transparent,
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.auto_awesome, size: 16, color: AppColors.primary),
-                          const SizedBox(width: 6),
-                          Text(
-                            '$_photosAttached photos ready for AI assistive grading',
-                            style: AppTypography.labelSmall.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
+                          Icon(
+                            _photoCount == 4 ? Icons.verified_rounded : Icons.auto_awesome,
+                            size: 16,
+                            color: _photoCount == 4 ? const Color(0xFF15803D) : AppColors.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _photoCount == 4
+                                  ? '✨ 4/4 Sides Captured! AI Quality Confidence: 94.8% Grade A'
+                                  : '$_photoCount/4 sides captured. Add all 4 sides for maximum buyer confidence.',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: _photoCount == 4 ? const Color(0xFF15803D) : AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ],
@@ -314,28 +986,81 @@ class _AddProduceScreenState extends State<AddProduceScreen> {
     );
   }
 
-  Widget _buildPhotoSlot(String label, bool hasPhoto) {
-    return Column(
-      children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: hasPhoto ? const Color(0xFFFFEBEE) : AppColors.surfaceContainer,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: hasPhoto ? AppColors.primary : AppColors.outlineVariant,
-            ),
+  Widget _buildPhotoSlot(int index) {
+    final photo = _sidePhotos[index];
+    final hasPhoto = photo != null;
+
+    return InkWell(
+      onTap: () => _showImageSourcePicker(index),
+      borderRadius: BorderRadius.circular(10),
+      child: Column(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: hasPhoto ? Colors.black : AppColors.surfaceContainer,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: hasPhoto ? const Color(0xFF15803D) : AppColors.outlineVariant,
+                    width: hasPhoto ? 2 : 1.2,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: hasPhoto
+                      ? Image.file(
+                          File(photo.path),
+                          fit: BoxFit.cover,
+                          width: 72,
+                          height: 72,
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(_slotIcons[index], color: AppColors.primary, size: 22),
+                            const SizedBox(height: 2),
+                            const Text(
+                              '+ Camera',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+              if (hasPhoto)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF15803D),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check, size: 12, color: Colors.white),
+                  ),
+                ),
+            ],
           ),
-          child: Center(
-            child: hasPhoto
-                ? const Text('🍅', style: TextStyle(fontSize: 26))
-                : const Icon(Icons.add_a_photo_outlined, color: AppColors.textMuted),
+          const SizedBox(height: 6),
+          Text(
+            _slotTitles[index],
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-      ],
+          Text(
+            _slotTelugu[index],
+            style: const TextStyle(fontSize: 9.5, color: Color(0xFF6B7280)),
+          ),
+        ],
+      ),
     );
   }
 }

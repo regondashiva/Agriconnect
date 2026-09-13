@@ -10,6 +10,7 @@ class ConsumerProduct {
   final double distanceKm;
   final String qualityGrade;
   final String iconEmoji;
+  final String? imageUrl;
   final double rating;
   final int ratingCount;
   final String deliveryTime;
@@ -28,6 +29,7 @@ class ConsumerProduct {
     required this.distanceKm,
     this.qualityGrade = 'Grade A',
     required this.iconEmoji,
+    this.imageUrl,
     this.rating = 4.8,
     this.ratingCount = 85,
     this.deliveryTime = '15-25 mins',
@@ -41,6 +43,48 @@ class ConsumerProduct {
     }
     return 0;
   }
+
+  factory ConsumerProduct.fromJson(Map<String, dynamic> json) {
+    return ConsumerProduct(
+      id: json['id']?.toString() ?? '',
+      name: json['name'] as String? ?? '',
+      category: json['category'] as String? ?? 'Vegetables',
+      pricePerKg: (json['price_per_kg'] as num?)?.toDouble() ?? 0.0,
+      mrpPrice: (json['mrp_price'] as num?)?.toDouble() ?? 0.0,
+      unit: json['unit'] as String? ?? '1 kg',
+      availableQuantityKg: (json['available_quantity_kg'] as num?)?.toDouble() ?? 0.0,
+      source: json['source'] as String? ?? '',
+      distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 0.0,
+      qualityGrade: json['quality_grade'] as String? ?? 'Grade A',
+      iconEmoji: json['icon_emoji'] as String? ?? '🥦',
+      imageUrl: json['image_url'] as String?,
+      rating: (json['rating'] as num?)?.toDouble() ?? 4.8,
+      ratingCount: (json['rating_count'] as num?)?.toInt() ?? 80,
+      deliveryTime: json['delivery_time'] as String? ?? '15-25 mins',
+      isBestseller: json['is_bestseller'] as bool? ?? false,
+      harvestFreshness: json['harvest_freshness'] as String? ?? 'Harvested Today',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'category': category,
+        'price_per_kg': pricePerKg,
+        'mrp_price': mrpPrice,
+        'unit': unit,
+        'available_quantity_kg': availableQuantityKg,
+        'source': source,
+        'distance_km': distanceKm,
+        'quality_grade': qualityGrade,
+        'icon_emoji': iconEmoji,
+        if (imageUrl != null) 'image_url': imageUrl,
+        'rating': rating,
+        'rating_count': ratingCount,
+        'delivery_time': deliveryTime,
+        'is_bestseller': isBestseller,
+        'harvest_freshness': harvestFreshness,
+      };
 }
 
 class CartItem {

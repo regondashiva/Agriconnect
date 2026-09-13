@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/produce_model.dart';
@@ -16,34 +17,96 @@ class CreateRequirementScreen extends StatefulWidget {
 }
 
 class _CreateRequirementScreenState extends State<CreateRequirementScreen> {
-  final _cropController = TextEditingController(text: 'Tomato (Hybrid Red)');
+  String _selectedCrop = 'Tomato';
+  final List<String> _cropOptions = [
+    'Tomato',
+    'Onion',
+    'Potato',
+    'Chilli',
+    'Cotton',
+    'Wheat',
+    'Rice',
+    'Carrot',
+    'Cabbage',
+    'Maize',
+  ];
   final _quantityController = TextEditingController(text: '500');
   final _locationController = TextEditingController(text: 'Plot 42, Kothapet Wholesale Mandi, Hyderabad');
   final _minPriceController = TextEditingController(text: '19');
   final _maxPriceController = TextEditingController(text: '22');
+  DateTime _requiredDate = DateTime.now().add(const Duration(days: 2));
+  final double _deliveryLat = 17.3850;
+  final double _deliveryLng = 78.4867;
   QualityGrade _grade = QualityGrade.gradeA;
   bool _isSearching = false;
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
+    final double qty = double.tryParse(_quantityController.text) ?? 0.0;
+    final double minP = double.tryParse(_minPriceController.text) ?? 0.0;
+    final double maxP = double.tryParse(_maxPriceController.text) ?? 0.0;
+
+    if (qty <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid quantity greater than 0 kg'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    if (minP <= 0 || maxP <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter valid target prices greater than ₹0'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    if (maxP < minP) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Maximum price cannot be less than minimum price'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSearching = true);
-
-    Future.delayed(const Duration(milliseconds: 1400), () {
-      final double qty = double.tryParse(_quantityController.text) ?? 500.0;
-      final double minP = double.tryParse(_minPriceController.text) ?? 19.0;
-      final double maxP = double.tryParse(_maxPriceController.text) ?? 22.0;
-
-      widget.appState.createBulkRequirement(
-        cropName: _cropController.text,
+    try {
+      await widget.appState.createBulkRequirement(
+        cropName: _selectedCrop,
         quantityKg: qty,
         grade: _grade,
-        location: _locationController.text,
+        location: _locationController.text.trim(),
         priceMin: minP,
         priceMax: maxP,
+        requiredDate: _requiredDate,
+        deliveryLat: _deliveryLat,
+        deliveryLng: _deliveryLng,
       );
 
-      setState(() => _isSearching = false);
-      Navigator.pushReplacementNamed(context, '/buyer/matches');
-    });
+      if (!mounted) return;
+      if (widget.appState.errorMessage == null) {
+        Navigator.pushReplacementNamed(context, '/buyer/matches');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(widget.appState.errorMessage ?? 'Failed to post requirement'),
+          backgroundColor: AppColors.error,
+        ));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: AppColors.error,
+      ));
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
   }
 
   @override
@@ -73,12 +136,23 @@ class _CreateRequirementScreenState extends State<CreateRequirementScreen> {
 
               Text('Produce / Crop', style: AppTypography.labelLarge),
               const SizedBox(height: 6),
-              TextField(
-                controller: _cropController,
+              DropdownButtonFormField<String>(
+                value: _selectedCrop,
                 decoration: const InputDecoration(
-                  hintText: 'e.g. Tomato, Potato, Onion',
                   prefixIcon: Icon(Icons.eco_rounded, color: AppColors.primary),
+                  border: OutlineInputBorder(),
                 ),
+                items: _cropOptions.map((crop) {
+                  return DropdownMenuItem<String>(
+                    value: crop,
+                    child: Text(crop, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() => _selectedCrop = val);
+                  }
+                },
               ),
 
               const SizedBox(height: 16),
@@ -92,6 +166,50 @@ class _CreateRequirementScreenState extends State<CreateRequirementScreen> {
                   hintText: '500',
                   suffixText: 'kg',
                   prefixIcon: Icon(Icons.scale_rounded, color: AppColors.primary),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Required By Date Picker
+              Text('Required By Date', style: AppTypography.labelLarge),
+              const SizedBox(height: 6),
+              InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _requiredDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 90)),
+                  );
+                  if (picked != null) {
+                    setState(() => _requiredDate = picked);
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  height: 54,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.outlineVariant, width: 1.5),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today_rounded, size: 20, color: AppColors.primary),
+                      const SizedBox(width: 10),
+                      Text(
+                        DateFormat('yyyy-MM-dd (EEEE)').format(_requiredDate),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      const Text(
+                        'Change',
+                        style: TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 

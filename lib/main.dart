@@ -3,14 +3,20 @@ import 'package:flutter/services.dart';
 import 'core/constants/app_strings.dart';
 import 'core/routes/app_routes.dart';
 import 'core/theme/app_theme.dart';
+import 'services/api_service.dart';
 import 'services/app_state.dart';
+import 'services/user_database_service.dart';
 
-void main() {
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+  await UserDatabaseService.instance.init();
+  await ApiService.instance.init();
 
   runApp(const AgriConnectApp());
 }
@@ -31,6 +37,21 @@ class _AgriConnectAppState extends State<AgriConnectApp> {
     _appState.addListener(() {
       setState(() {});
     });
+
+    // Global 401 Token Expiration Interceptor (Contract requirement)
+    ApiService.instance.onUnauthorized = () {
+      _appState.logout();
+      rootNavigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (r) => false);
+      final ctx = rootNavigatorKey.currentContext;
+      if (ctx != null) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          const SnackBar(
+            content: Text('Session expired. Please sign in again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    };
   }
 
   @override
@@ -42,6 +63,7 @@ class _AgriConnectAppState extends State<AgriConnectApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: rootNavigatorKey,
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

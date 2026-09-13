@@ -55,6 +55,9 @@ class OrderModel {
   final List<FarmerSettlement> settlements;
   final String eta;
   final String currentStatusText;
+  final String paymentMethod;
+  final List<String> itemsSummary;
+  final DateTime? orderDate;
 
   const OrderModel({
     required this.orderId,
@@ -68,5 +71,8 @@ class OrderModel {
     this.settlements = const [],
     this.eta = 'Today, 4:30 PM',
     required this.currentStatusText,
+    this.paymentMethod = 'UPI (Google Pay / PhonePe)',
+    this.itemsSummary = const ['Fresh Farm Tomatoes (2 kg)', 'Organic Potatoes (1 kg)'],
+    this.orderDate,
   });
 }

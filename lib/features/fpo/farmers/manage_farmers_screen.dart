@@ -33,7 +33,7 @@ class ManageFarmersScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           _buildFarmerItem(
-            name: 'Ramesh Reddy',
+            name: 'Primary Cluster Farm',
             location: 'Chevella Village',
             phone: '+91 98765 43210',
             crop: 'Tomato (Hybrid Red)',
@@ -43,7 +43,7 @@ class ManageFarmersScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _buildFarmerItem(
-            name: 'Suresh Rao',
+            name: 'Cluster Partner Farm B',
             location: 'Shabad Center Farm',
             phone: '+91 98480 55443',
             crop: 'Tomato (Hybrid Red)',
@@ -53,7 +53,7 @@ class ManageFarmersScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _buildFarmerItem(
-            name: 'Ravi Kumar',
+            name: 'Cluster Partner Farm C',
             location: 'Moinabad Cluster',
             phone: '+91 99123 77889',
             crop: 'Tomato (Hybrid Red)',

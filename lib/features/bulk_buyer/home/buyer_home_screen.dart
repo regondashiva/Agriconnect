@@ -24,6 +24,14 @@ class _BulkBuyerHomeScreenState extends State<BulkBuyerHomeScreen> {
   int _currentTabIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.appState.fetchRequirements();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,

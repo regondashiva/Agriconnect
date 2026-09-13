@@ -282,7 +282,7 @@ class _SmartLogisticsScreenState extends State<SmartLogisticsScreen> {
                                 // Stop 1
                                 _buildRouteStopItem(
                                   dotColor: const Color(0xFF16A34A),
-                                  title: 'Farm A (Ramesh)',
+                                  title: 'Farm 1 (Pickup Stop)',
                                   subtitle: 'Pickup: 300kg Wheat',
                                   time: '10:00 AM',
                                   showConnector: true,
@@ -291,7 +291,7 @@ class _SmartLogisticsScreenState extends State<SmartLogisticsScreen> {
                                 // Stop 2
                                 _buildRouteStopItem(
                                   dotColor: const Color(0xFF94A3B8),
-                                  title: 'Farm B (Suresh)',
+                                  title: 'Farm 2 (Cluster Stop)',
                                   subtitle: 'Pickup: 700kg Wheat',
                                   time: '11:30 AM',
                                   showConnector: true,

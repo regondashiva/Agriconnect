@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/match_model.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../services/app_state.dart';
@@ -14,6 +15,38 @@ class SmartAggregationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final match = appState.activeMatch;
+    final currentFarmerName = appState.currentUser.name.trim().isNotEmpty
+        ? appState.currentUser.name.trim()
+        : 'Your Farm';
+    final currentProduce = appState.produceList.isNotEmpty ? appState.produceList.first : null;
+    final double userQty = currentProduce?.availableQuantityKg ?? 100.0;
+    final double userPrice = currentProduce?.expectedPricePerKg ?? 20.0;
+
+    final List<SupplyContributor> contributors = (match != null && match.contributors.isNotEmpty)
+        ? match.contributors
+        : [
+            SupplyContributor(
+              farmerId: appState.currentUser.id.isNotEmpty ? appState.currentUser.id : 'usr_farmer_me',
+              farmerName: '$currentFarmerName (You)',
+              location: appState.currentUser.location.isNotEmpty ? appState.currentUser.location : 'Chevella Village',
+              quantityKg: userQty,
+              payoutAmount: userQty * userPrice,
+            ),
+            const SupplyContributor(
+              farmerId: 'partner_01',
+              farmerName: 'Cluster Partner Farm 1',
+              location: 'Shabad Center',
+              quantityKg: 150.0,
+              payoutAmount: 3000.0,
+            ),
+            const SupplyContributor(
+              farmerId: 'partner_02',
+              farmerName: 'Cluster Partner Farm 2',
+              location: 'Moinabad Cluster',
+              quantityKg: 250.0,
+              payoutAmount: 5000.0,
+            ),
+          ];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -140,9 +173,11 @@ class SmartAggregationScreen extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              // 3 Farmers
-              ...match.contributors.map((contributor) {
-                final isCurrent = contributor.farmerId == 'farmer_001';
+              ...contributors.map((contributor) {
+                final isCurrent = contributor.farmerName.contains('(You)') ||
+                    contributor.farmerId == appState.currentUser.id ||
+                    (currentFarmerName.isNotEmpty && contributor.farmerName.toLowerCase().contains(currentFarmerName.toLowerCase()));
+                final initial = contributor.farmerName.trim().isNotEmpty ? contributor.farmerName.trim()[0].toUpperCase() : 'F';
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: AppCard(
@@ -155,7 +190,7 @@ class SmartAggregationScreen extends StatelessWidget {
                           radius: 20,
                           backgroundColor: isCurrent ? AppColors.primary : AppColors.surfaceContainer,
                           child: Text(
-                            contributor.farmerName.contains('A') ? 'A' : contributor.farmerName.contains('B') ? 'B' : 'C',
+                            initial,
                             style: TextStyle(
                               color: isCurrent ? Colors.white : AppColors.textNavy,
                               fontWeight: FontWeight.w700,

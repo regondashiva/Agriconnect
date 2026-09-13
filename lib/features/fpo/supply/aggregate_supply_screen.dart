@@ -109,7 +109,7 @@ class _AggregateSupplyScreenState extends State<AggregateSupplyScreen> {
 
               _buildSelectableLot(
                 id: 'farmer_001',
-                name: 'Ramesh Reddy (Chevella)',
+                name: 'Cluster Farm A (Chevella)',
                 crop: 'Tomato Grade A',
                 qtyKg: 100,
                 quality: '87/100',
@@ -117,7 +117,7 @@ class _AggregateSupplyScreenState extends State<AggregateSupplyScreen> {
               const SizedBox(height: 10),
               _buildSelectableLot(
                 id: 'farmer_002',
-                name: 'Suresh Rao (Shabad)',
+                name: 'Cluster Farm B (Shabad)',
                 crop: 'Tomato Grade A',
                 qtyKg: 150,
                 quality: '89/100',
@@ -125,7 +125,7 @@ class _AggregateSupplyScreenState extends State<AggregateSupplyScreen> {
               const SizedBox(height: 10),
               _buildSelectableLot(
                 id: 'farmer_003',
-                name: 'Ravi Kumar (Moinabad)',
+                name: 'Cluster Farm C (Moinabad)',
                 crop: 'Tomato Grade A',
                 qtyKg: 250,
                 quality: '86/100',

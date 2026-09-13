@@ -32,9 +32,14 @@ import '../../features/consumer/home/consumer_home_screen.dart';
 import '../../features/consumer/products/consumer_product_details_screen.dart';
 import '../../features/consumer/cart/consumer_cart_screen.dart';
 import '../../features/consumer/checkout/consumer_checkout_screen.dart';
+import '../../features/consumer/orders/consumer_order_history_screen.dart';
 import '../../features/consumer/orders/consumer_tracking_screen.dart';
+import '../../features/delivery/registration/delivery_registration_screen.dart';
+import '../../features/delivery/home/delivery_home_screen.dart';
+import '../../features/delivery/trips/active_trip_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../models/consumer_product_model.dart';
+import '../../models/produce_model.dart';
 import '../../services/app_state.dart';
 
 class AppRoutes {
@@ -51,7 +56,13 @@ class AppRoutes {
 
       case '/otp':
         final phone = (settings.arguments as String?) ?? appState.authPhoneNumber;
-        return MaterialPageRoute(builder: (_) => OtpScreen(appState: appState, phoneNumber: phone));
+        return MaterialPageRoute(
+          builder: (_) => OtpScreen(
+            appState: appState,
+            phoneNumber: phone,
+            sessionId: appState.pendingSessionId,
+          ),
+        );
 
       case '/role-selection':
         return MaterialPageRoute(builder: (_) => RoleSelectionScreen(appState: appState));
@@ -76,7 +87,13 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => MyProduceScreen(appState: appState));
 
       case '/farmer/produce/detail':
-        return MaterialPageRoute(builder: (_) => ProduceDetailsScreen(appState: appState));
+        final item = settings.arguments as ProduceItem?;
+        return MaterialPageRoute(
+          builder: (_) => ProduceDetailsScreen(
+            appState: appState,
+            produceItem: item,
+          ),
+        );
 
       case '/farmer/matches':
         return MaterialPageRoute(builder: (_) => FarmerMatchesScreen(appState: appState));
@@ -154,6 +171,22 @@ class AppRoutes {
 
       case '/consumer/tracking':
         return MaterialPageRoute(builder: (_) => ConsumerTrackingScreen(appState: appState));
+
+      case '/consumer/orders':
+        return MaterialPageRoute(builder: (_) => ConsumerOrderHistoryScreen(appState: appState));
+
+      // Delivery Partner Flow
+      case '/delivery/registration':
+        return MaterialPageRoute(builder: (_) => DeliveryRegistrationScreen(appState: appState));
+
+      case '/delivery/home':
+        return MaterialPageRoute(builder: (_) => DeliveryHomeScreen(appState: appState));
+
+      case '/delivery/trip':
+        final trip = settings.arguments as Map<String, dynamic>? ?? {};
+        return MaterialPageRoute(
+          builder: (_) => ActiveTripScreen(appState: appState, tripData: trip),
+        );
 
       // Notifications
       case '/notifications':
