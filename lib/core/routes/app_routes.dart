@@ -36,6 +36,8 @@ import '../../features/consumer/orders/consumer_order_history_screen.dart';
 import '../../features/consumer/orders/consumer_tracking_screen.dart';
 import '../../features/delivery/registration/delivery_registration_screen.dart';
 import '../../features/delivery/home/delivery_home_screen.dart';
+import '../../features/delivery/history/delivery_history_screen.dart';
+import '../../features/delivery/profile/delivery_profile_screen.dart';
 import '../../features/delivery/trips/active_trip_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../models/consumer_product_model.dart';
@@ -181,6 +183,12 @@ class AppRoutes {
 
       case '/delivery/home':
         return MaterialPageRoute(builder: (_) => DeliveryHomeScreen(appState: appState));
+
+      case '/delivery/history':
+        return MaterialPageRoute(builder: (_) => DeliveryHistoryScreen(appState: appState));
+
+      case '/delivery/profile':
+        return MaterialPageRoute(builder: (_) => DeliveryProfileScreen(appState: appState));
 
       case '/delivery/trip':
         final trip = settings.arguments as Map<String, dynamic>? ?? {};

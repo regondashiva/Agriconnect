@@ -1937,8 +1937,8 @@ class AppState extends ChangeNotifier {
   // Delivery Partner State
   // ---------------------------------------------------------------------------
   bool _isDriverOnline = true;
-  double _driverEarningsToday = 380.0;
-  int _driverCompletedTripsToday = 6;
+  double _driverEarningsToday = 495.0;
+  int _driverCompletedTripsToday = 8;
   final List<Map<String, dynamic>> _activeDeliveryTrips = [
     {
       'orderId': 'AGR-4921',
@@ -1974,21 +1974,229 @@ class AppState extends ChangeNotifier {
     },
   ];
 
+  final List<Map<String, dynamic>> _driverTripHistory = [
+    {
+      'orderId': 'AGR-4910',
+      'customerName': 'Ananya Sharma',
+      'customerPhone': '+919876543213',
+      'destination': 'Flat 402, Green Meadows, Madhapur, Hyderabad',
+      'pickupHub': 'Ranga Reddy FPO Hub (Dock 2, Shabad)',
+      'crateId': 'CR-104',
+      'items': ['Farm Fresh Red Tomatoes (2.0 kg)', 'Organic Jyoti Potatoes (1.5 kg)'],
+      'weight': '3.5 kg',
+      'distance': '6.8 km',
+      'duration': '24 mins',
+      'payout': 65.0,
+      'completedAt': 'Today, 09:42 AM',
+      'dateCategory': 'today',
+      'status': 'DELIVERED',
+      'otpVerified': true,
+      'otp': '7492',
+      'settlementRef': 'UPI-2026-9921448',
+    },
+    {
+      'orderId': 'AGR-4882',
+      'customerName': 'Rajesh Reddy',
+      'customerPhone': '+919848011234',
+      'destination': 'House 12-4, Telecom Nagar, Gachibowli, Hyderabad',
+      'pickupHub': 'Ranga Reddy FPO Hub (Dock 1, Shabad)',
+      'crateId': 'CR-088',
+      'items': ['Organic Red Onions (3.0 kg)', 'Fresh Green Chillies (500 g)', 'Fresh Coriander (1.5 kg)'],
+      'weight': '5.0 kg',
+      'distance': '7.2 km',
+      'duration': '26 mins',
+      'payout': 70.0,
+      'completedAt': 'Today, 09:05 AM',
+      'dateCategory': 'today',
+      'status': 'DELIVERED',
+      'otpVerified': true,
+      'otp': '3180',
+      'settlementRef': 'UPI-2026-9918231',
+    },
+    {
+      'orderId': 'AGR-4860',
+      'customerName': 'Priya Verma',
+      'customerPhone': '+919988776655',
+      'destination': 'Flat 301, Cyber Heights, HITEC City, Hyderabad',
+      'pickupHub': 'Ranga Reddy FPO Hub (Dock 2, Shabad)',
+      'crateId': 'CR-094',
+      'items': ['Organic Spinach / Palak (1.0 kg)', 'Country Carrots (1.5 kg)'],
+      'weight': '2.5 kg',
+      'distance': '5.1 km',
+      'duration': '19 mins',
+      'payout': 55.0,
+      'completedAt': 'Today, 08:30 AM',
+      'dateCategory': 'today',
+      'status': 'DELIVERED',
+      'otpVerified': true,
+      'otp': '5519',
+      'settlementRef': 'UPI-2026-9914502',
+    },
+    {
+      'orderId': 'AGR-4835',
+      'customerName': 'Dr. K. Srinivas',
+      'customerPhone': '+919848022199',
+      'destination': 'Plot 18, Road No. 12, Banjara Hills, Hyderabad',
+      'pickupHub': 'Ranga Reddy FPO Hub (Dock 3, Shabad)',
+      'crateId': 'CR-071',
+      'items': ['Fresh Farm Tomatoes (3.0 kg)', 'Organic Ridge Gourd (1.5 kg)', 'Mint Leaves (1.5 kg)'],
+      'weight': '6.0 kg',
+      'distance': '8.5 km',
+      'duration': '28 mins',
+      'payout': 75.0,
+      'completedAt': 'Today, 07:55 AM',
+      'dateCategory': 'today',
+      'status': 'DELIVERED',
+      'otpVerified': true,
+      'otp': '8204',
+      'settlementRef': 'UPI-2026-9909381',
+    },
+    {
+      'orderId': 'AGR-4812',
+      'customerName': 'Suresh Babu',
+      'customerPhone': '+919700088776',
+      'destination': 'Villa 14, Palm Meadows, Narsingi, Hyderabad',
+      'pickupHub': 'Ranga Reddy FPO Hub (Dock 1, Shabad)',
+      'crateId': 'CR-065',
+      'items': ['Organic Jyoti Potatoes (2.0 kg)', 'Fresh Ginger (1.0 kg)'],
+      'weight': '3.0 kg',
+      'distance': '4.8 km',
+      'duration': '16 mins',
+      'payout': 55.0,
+      'completedAt': 'Today, 07:20 AM',
+      'dateCategory': 'today',
+      'status': 'DELIVERED',
+      'otpVerified': true,
+      'otp': '1942',
+      'settlementRef': 'UPI-2026-9905120',
+    },
+    {
+      'orderId': 'AGR-4790',
+      'customerName': 'Madhavi Latha',
+      'customerPhone': '+919123456789',
+      'destination': 'Flat 504, Sri Sai Enclave, Manikonda, Hyderabad',
+      'pickupHub': 'Ranga Reddy FPO Hub (Dock 2, Shabad)',
+      'crateId': 'CR-052',
+      'items': ['Organic Brinjal (2.0 kg)', 'Green Capsicum (1.2 kg)', 'Curry Leaves (1.0 kg)'],
+      'weight': '4.2 kg',
+      'distance': '6.0 km',
+      'duration': '21 mins',
+      'payout': 60.0,
+      'completedAt': 'Today, 06:50 AM',
+      'dateCategory': 'today',
+      'status': 'DELIVERED',
+      'otpVerified': true,
+      'otp': '4081',
+      'settlementRef': 'UPI-2026-9901458',
+    },
+    {
+      'orderId': 'AGR-4765',
+      'customerName': 'Venkat Ramana',
+      'customerPhone': '+919849033445',
+      'destination': 'House 4-88, Puppalaguda Main Rd, Hyderabad',
+      'pickupHub': 'Ranga Reddy FPO Hub (Dock 1, Shabad)',
+      'crateId': 'CR-040',
+      'items': ['Fresh Farm Tomatoes (2.5 kg)', 'Organic Cauliflower (1.5 kg)'],
+      'weight': '4.0 kg',
+      'distance': '5.5 km',
+      'duration': '18 mins',
+      'payout': 60.0,
+      'completedAt': 'Today, 06:18 AM',
+      'dateCategory': 'today',
+      'status': 'DELIVERED',
+      'otpVerified': true,
+      'otp': '6312',
+      'settlementRef': 'UPI-2026-9898012',
+    },
+    {
+      'orderId': 'AGR-4740',
+      'customerName': 'Kavitha Reddy',
+      'customerPhone': '+919949022110',
+      'destination': 'Flat 202, Fortune Towers, Financial District, Hyderabad',
+      'pickupHub': 'Ranga Reddy FPO Hub (Dock 2, Shabad)',
+      'crateId': 'CR-033',
+      'items': ['Organic Bottle Gourd (1.8 kg)', 'Fresh Lady Finger / Bhendi (2.0 kg)'],
+      'weight': '3.8 kg',
+      'distance': '5.9 km',
+      'duration': '20 mins',
+      'payout': 55.0,
+      'completedAt': 'Today, 05:45 AM',
+      'dateCategory': 'today',
+      'status': 'DELIVERED',
+      'otpVerified': true,
+      'otp': '9025',
+      'settlementRef': 'UPI-2026-9894109',
+    },
+    {
+      'orderId': 'AGR-4690',
+      'customerName': 'Vikram Goud',
+      'customerPhone': '+919888844332',
+      'destination': 'Plot 45, Golden Tulip, Kondapur, Hyderabad',
+      'pickupHub': 'Ranga Reddy FPO Hub (Dock 1, Shabad)',
+      'crateId': 'CR-028',
+      'items': ['Organic Tomatoes (3.0 kg)', 'Green Chillies (1.0 kg)'],
+      'weight': '4.0 kg',
+      'distance': '6.2 km',
+      'duration': '22 mins',
+      'payout': 65.0,
+      'completedAt': 'Yesterday, 05:15 PM',
+      'dateCategory': 'this_week',
+      'status': 'DELIVERED',
+      'otpVerified': true,
+      'otp': '4820',
+      'settlementRef': 'UPI-2026-9872190',
+    },
+    {
+      'orderId': 'AGR-4655',
+      'customerName': 'Shweta Rao',
+      'customerPhone': '+919765412345',
+      'destination': 'Flat 601, Silicon Valley Apts, Madhapur, Hyderabad',
+      'pickupHub': 'Ranga Reddy FPO Hub (Dock 2, Shabad)',
+      'crateId': 'CR-021',
+      'items': ['Jyoti Potatoes (4.0 kg)', 'Fresh Mint (500 g)'],
+      'weight': '4.5 kg',
+      'distance': '5.0 km',
+      'duration': '17 mins',
+      'payout': 55.0,
+      'completedAt': 'Yesterday, 03:40 PM',
+      'dateCategory': 'this_week',
+      'status': 'DELIVERED',
+      'otpVerified': true,
+      'otp': '1190',
+      'settlementRef': 'UPI-2026-9865012',
+    },
+  ];
+
   bool get isDriverOnline => _isDriverOnline;
   double get driverEarningsToday => _driverEarningsToday;
   int get driverCompletedTripsToday => _driverCompletedTripsToday;
   List<Map<String, dynamic>> get activeDeliveryTrips => List.unmodifiable(_activeDeliveryTrips);
+  List<Map<String, dynamic>> get driverTripHistory => List.unmodifiable(_driverTripHistory);
 
   void toggleDriverOnline() {
     _isDriverOnline = !_isDriverOnline;
     notifyListeners();
   }
 
-  void completeDriverTrip(double payout, {String? orderId}) {
+  void completeDriverTrip(double payout, {String? orderId, Map<String, dynamic>? tripDetails}) {
     _driverEarningsToday += payout;
     _driverCompletedTripsToday += 1;
+    Map<String, dynamic>? completedTrip;
     if (orderId != null) {
-      _activeDeliveryTrips.removeWhere((t) => t['orderId'] == orderId);
+      final index = _activeDeliveryTrips.indexWhere((t) => t['orderId'] == orderId);
+      if (index != -1) {
+        completedTrip = Map<String, dynamic>.from(_activeDeliveryTrips.removeAt(index));
+      }
+    }
+    completedTrip ??= tripDetails != null ? Map<String, dynamic>.from(tripDetails) : null;
+    if (completedTrip != null) {
+      completedTrip['completedAt'] = 'Just Now';
+      completedTrip['dateCategory'] = 'today';
+      completedTrip['status'] = 'DELIVERED';
+      completedTrip['otpVerified'] = true;
+      completedTrip['payout'] = payout;
+      completedTrip['settlementRef'] = 'UPI-2026-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+      _driverTripHistory.insert(0, completedTrip);
     }
     notifyListeners();
   }

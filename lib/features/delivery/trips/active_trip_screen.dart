@@ -58,7 +58,11 @@ class _ActiveTripScreenState extends State<ActiveTripScreen> {
     await Future.delayed(const Duration(milliseconds: 900));
 
     final payout = (widget.tripData['payout'] as num?)?.toDouble() ?? 50.0;
-    widget.appState.completeDriverTrip(payout, orderId: widget.tripData['orderId'] as String?);
+    widget.appState.completeDriverTrip(
+      payout,
+      orderId: widget.tripData['orderId'] as String?,
+      tripDetails: widget.tripData,
+    );
 
     if (!mounted) return;
     setState(() => _isVerifyingOtp = false);
